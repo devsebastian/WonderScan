@@ -1,0 +1,58 @@
+<!--
+  ~ Copyright (C) 2021 Dev Sebastian
+  ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
+  ~
+  ~ WonderScan is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ WonderScan is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">WonderScan</string>
+    <string name="made_in_india">This app was made with love in India. If you want to help support us, please click this message to share this app with your friends and loved ones!</string>
+
+    <!-- intents -->
+    <string name="intent_angle">angle</string>
+    <string name="intent_edited_path">edited_path</string>
+    <string name="intent_cropped_path">cropped_path</string>
+    <string name="intent_source_path">source_path</string>
+    <string name="intent_format">format</string>
+    <string name="intent_document_id">document_id</string>
+    <string name="intent_frame_position">frame_position</string>
+    <string name="intent_uris">uris</string>
+
+    <!-- preferences -->
+    <string name="preference_privacy_policy">preference_privacy_policy</string>
+    <string name="preference_rate_us">preference_rate_us</string>
+    <string name="intent_frame_id">frameId</string>
+    <string name="toast_error_message">Unexpected error: Oops something went wrong.</string>
+    <string name="intent_path">intent_path</string>
+    <string name="intent_native_mat_address">intent_native_mat_address</string>
+    <string name="key_system_theme">key_system_theme</string>
+    <string name="key_default_theme">key_default_theme</string>
+    <string name="dark_theme">Dark Theme</string>
+    <string name="light_theme">Light Theme</string>
+    <string name="preference_use_system_theme">useSystemTheme</string>
+    <string name="preference_mode_night">night</string>
+    <string name="preference_feedback">preference_feedback</string>
+    <string name="key_developer">key_developer</string>
+    <string name="choose_email_client">Choose Email Client</string>
+
+    <string name="share_message">Support Indian Apps, Use this amazing app - WonderScan to scan documents. It provides 100% data security and privacy. Developed and designed completely in India by Indian Engineers!\nhttps://play.google.com/store/apps/details?id=com.devsebastian.wonderscan </string>
+    <string name="feedback_message">If you\'re not happy with the product or want to suggest changes, you can write to me directly at developer.devsebastian@gmail.com:)</string>
+    <string name="gallery_message">Select the images and press proceed to automatically create a WonderScan document from the selected images.</string>
+
+    <string-array name="themes">
+        <item>@string/dark_theme</item>
+        <item>@string/light_theme</item>
+    </string-array>
+</resources>

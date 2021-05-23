@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2021 Dev Sebastian
+  ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
+  ~
+  ~ WonderScan is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ WonderScan is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".activity.ScanActivity">
+
+
+    <FrameLayout
+        android:id="@+id/camera_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/viewFinder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/darker_gray" />
+
+        <com.devsebastian.wonderscan.view.ScanView
+            android:id="@+id/scan_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/black"
+        android:minHeight="150dp"
+        android:orientation="vertical">
+
+
+        <ProgressBar
+            android:id="@+id/pb_scan"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/btn_capture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="12dp"
+            android:background="@drawable/ic_camera_button" />
+
+        <TextView
+            android:id="@+id/page_count"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="28dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/ic_image_bubble"
+            android:elevation="6dp"
+            android:gravity="center"
+            android:text="1"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:visibility="gone"
+            android:textSize="12sp"/>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="44dp"
+            app:cardBackgroundColor="@android:color/darker_gray"
+            app:cardCornerRadius="6dp">
+
+            <ImageView
+                android:id="@+id/iv_recent_capture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+        </androidx.cardview.widget.CardView>
+
+    </FrameLayout>
+</LinearLayout>

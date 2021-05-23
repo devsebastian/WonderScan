@@ -1,0 +1,28 @@
+<!--
+  ~ Copyright (C) 2021 Dev Sebastian
+  ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
+  ~
+  ~ WonderScan is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ WonderScan is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+    <path
+        android:fillColor="#FFF"
+        android:fillType="evenOdd"
+        android:pathData="M14.63,2.3975L25.76,12.5475L24.5175,13.79L22.75,12.1872V23.6075L21.875,24.4825H16.625L15.75,23.6075V17.4825H12.25V23.6075L11.375,24.4825H6.125L5.25,23.6075L5.25,12.2004L3.5,13.79L2.2575,12.5475L13.37,2.3975H13.3875H14.6125H14.63ZM7,10.6108V22.7325H10.5V16.6075L11.375,15.7325H16.625L17.5,16.6075V22.7325H21V10.6003L14,4.2525L7,10.6108Z" />
+</vector>

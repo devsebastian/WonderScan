@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2021 Dev Sebastian
+  ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
+  ~
+  ~ WonderScan is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ WonderScan is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--    <PreferenceCategory android:title="GENERAL">-->
+    <!--        <SwitchPreference-->
+    <!--            android:icon="@drawable/ic_image"-->
+    <!--            android:summary="Save Images to Gallery"-->
+    <!--            android:title="Files" />-->
+    <!--    </PreferenceCategory>-->
+
+    <PreferenceCategory android:title="THEME">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/key_system_theme"
+            android:title="Use system theme" />
+        <ListPreference
+            android:defaultValue="@string/dark_theme"
+            android:entries="@array/themes"
+            android:entryValues="@array/themes"
+            android:key="@string/key_default_theme"
+            android:title="Default app theme" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="ABOUT">
+
+        <Preference
+            android:icon="@drawable/ic_info"
+            android:summary="version 1.0.0"
+            android:title="@string/app_name" />
+
+        <Preference
+            android:key="@string/key_developer"
+            android:icon="@drawable/ic_developer"
+            android:summary="This app was designed and developed by Dev Sebastian"
+            android:title="About Developer" />
+        <Preference
+            android:icon="@drawable/ic_thumbs_up"
+            android:key="@string/preference_rate_us"
+            android:summary="If you loved the app. please leave a 5 star review:)"
+            android:title="Rate WonderScan" />
+
+        <Preference
+            android:icon="@drawable/ic_doc"
+            android:key="@string/preference_privacy_policy"
+            android:summary="Read our privacy policy"
+            android:title="Privacy policy" />
+
+        <Preference
+            android:icon="@drawable/ic_feedback"
+            android:key="@string/preference_feedback"
+            android:summary="@string/feedback_message"
+            android:title="Feedback" />
+
+    </PreferenceCategory>
+</PreferenceScreen>

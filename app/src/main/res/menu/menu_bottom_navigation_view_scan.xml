@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2021 Dev Sebastian
+  ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
+  ~
+  ~ WonderScan is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ WonderScan is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:icon="@drawable/ic_close"
+        android:orderInCategory="0"
+        android:id="@+id/menu_retake"
+        android:title="Retake" />
+    <item
+        android:id="@+id/menu_rotate_left"
+        android:orderInCategory="1"
+        android:icon="@drawable/ic_rotate_left"
+        android:title="Left" />
+    <item
+        android:id="@+id/menu_rotate_right"
+        android:icon="@drawable/ic_rotate_right"
+        android:orderInCategory="2"
+        android:title="Right" />
+    <item
+        android:id="@+id/menu_crop_free"
+        android:icon="@drawable/ic_crop_free"
+        android:orderInCategory="3"
+        android:title="All" />
+    <item
+        android:orderInCategory="4"
+        android:id="@+id/menu_confirm"
+        android:icon="@drawable/ic_check"
+        android:title="Confirm" />
+</menu>
