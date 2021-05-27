@@ -1,5 +1,5 @@
 # WonderScan
-WonderScan is a Document Scanning Mobile application developed in India. All data is stored in your device and no data is sent to any server in or outside India! 
+WonderScan is a Document Scanning Mobile application developed in India. All data is stored in your device and no data is sent to any server! 
 Many different filters are available ranging from simple Black and White to Magic color. 
 various other parameters like the brightness and contrast can also be controlled quite easilly.
 
