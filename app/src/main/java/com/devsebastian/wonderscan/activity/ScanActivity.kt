@@ -193,8 +193,11 @@ class ScanActivity : BaseActivity() {
             val image = imageProxy.image
             if (image != null && image.format == ImageFormat.YUV_420_888) {
                 lifecycleScope.launch(Dispatchers.Default) {
-                    scanView.setBoundingRect(DetectBox.findCorners(imageProxy, angle))
+                    val boundingRect = DetectBox.findCorners(imageProxy, angle)
                     imageProxy.close()
+                    runOnUiThread {
+                        scanView.setBoundingRect(boundingRect)
+                    }
                 }
             }
         })

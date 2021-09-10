@@ -33,7 +33,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import com.devsebastian.wonderscan.R
 
-class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChangeListener,
+open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChangeListener,
     Preference.OnPreferenceChangeListener {
     private lateinit var preferences: SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {

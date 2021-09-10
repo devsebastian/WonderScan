@@ -28,10 +28,6 @@ import java.util.*
 
 class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, VERSION) {
     private val db: SQLiteDatabase = writableDatabase
-    private lateinit var onDocumentInsertListener: OnDocumentInsertListener
-    private lateinit var onDocumentDeleteListener: OnDocumentDeleteListener
-    private lateinit var onFrameDeleteListener: OnFrameDeleteListener
-    private lateinit var onFrameUpdateListener: OnFrameUpdateListener
 
     override fun onCreate(sqLiteDatabase: SQLiteDatabase) {
         val docQuery = "CREATE TABLE " + TABLE_NAME_DOCUMENTS + "(" +
@@ -109,9 +105,7 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
     }
 
     fun insertDocument(name: String): Long {
-        val docId = createDocument(name)
-        onDocumentInsertListener.onDocumentInsert(getDocument(docId))
-        return docId
+        return createDocument(name)
     }
 
     fun insertFrame(id: Long, frame: Frame): Long {
@@ -125,7 +119,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         Utils.removeImageFromCache(getEditedPath(frameId))
         db.delete(TABLE_NAME_FRAME_PATHS, "$COL_FRAME_ID=?", arrayOf(frameId.toString()))
         db.delete(TABLE_NAME_FRAMES, "$COL_ID=?", arrayOf(frameId.toString()))
-        onFrameDeleteListener.onFrameDelete(frameIndex)
     }
 
     private fun updatePath(frameId: Long, path: String?, type: Int): Boolean {
@@ -154,18 +147,12 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         if (!updatePath(frameId, path, type)) {
             createPath(frameId, path, type)
         }
-        onFrameUpdateListener.onFrameUpdate(
-            getFrameIndex(
-                frameId
-            )
-        )
     }
 
     private fun insertPath(docId: Long, frameIndex: Long, path: String?, type: Int) {
         if (!updatePath(getFrameId(docId, frameIndex), path, type)) {
             createPath(getFrameId(docId, frameIndex), path, type)
         }
-        onFrameUpdateListener.onFrameUpdate(frameIndex)
     }
 
     private fun getFrameId(docId: Long, frameIndex: Long): Long {
@@ -184,22 +171,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         }
         cursor.close()
         return frameId
-    }
-
-    private fun getFrameIndex(frameId: Long): Long {
-        var frameIndex: Long = -1
-        val cursor = db.query(
-            TABLE_NAME_FRAME_PATHS,
-            null,
-            "$COL_FRAME_ID=?",
-            selectionArgs(frameId),
-            null,
-            null,
-            null
-        )
-        if (cursor.moveToFirst()) frameIndex = cursor.getLong(cursor.getColumnIndex(COL_ID))
-        cursor.close()
-        return frameIndex
     }
 
     private fun readFrame(cursor: Cursor): Frame {
@@ -348,7 +319,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
         val db = this.writableDatabase
         deleteFrames(docId)
         db.delete(TABLE_NAME_DOCUMENTS, "$COL_ID = ? ", arrayOf(docId.toString()))
-        onDocumentDeleteListener.onDocumentDelete(docId)
     }
 
     fun getDocument(id: Long): Document {
@@ -422,7 +392,6 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
             "$COL_DOC_ID=? AND $COL_FRAME_INDEX=?",
             arrayOf(docId.toString(), frameIndex.toString())
         )
-        onFrameUpdateListener.onFrameUpdate(frameIndex)
     }
 
     fun renameFrame(docId: Long, frameIndex: Long, name: String) {
@@ -434,28 +403,8 @@ class DBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null
             "$COL_DOC_ID=? AND $COL_FRAME_INDEX=?",
             arrayOf(docId.toString(), frameIndex.toString())
         )
-        onFrameUpdateListener.onFrameUpdate(frameIndex)
     }
 
-    fun setOnDocumentInsertListener(onDocumentInsertListener: OnDocumentInsertListener) {
-        this.onDocumentInsertListener = onDocumentInsertListener
-    }
-
-    interface OnDocumentInsertListener {
-        fun onDocumentInsert(document: Document)
-    }
-
-    interface OnDocumentDeleteListener {
-        fun onDocumentDelete(index: Long)
-    }
-
-    interface OnFrameUpdateListener {
-        fun onFrameUpdate(frameIndex: Long)
-    }
-
-    interface OnFrameDeleteListener {
-        fun onFrameDelete(index: Long)
-    }
 
     companion object {
         private const val DATABASE_NAME: String = "FramesDB"

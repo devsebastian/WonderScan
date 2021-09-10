@@ -25,26 +25,17 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.devsebastian.wonderscan.utils.DBHelper
-import com.devsebastian.wonderscan.utils.DBHelper.OnDocumentInsertListener
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.activity.ScanActivity
 import com.devsebastian.wonderscan.adapter.DocumentsAdapter
-import com.devsebastian.wonderscan.data.Document
+import com.devsebastian.wonderscan.utils.DBHelper
 
-class MainFragment : Fragment(), View.OnClickListener {
+open class MainFragment : Fragment(), View.OnClickListener {
     lateinit var dbHelper: DBHelper
     lateinit var documentsAdapter: DocumentsAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dbHelper = DBHelper(requireContext())
-        dbHelper.setOnDocumentInsertListener(object : OnDocumentInsertListener {
-            override fun onDocumentInsert(document: Document) {
-                documentsAdapter.insertDocument(
-                    document
-                )
-            }
-        })
     }
 
     override fun onCreateView(

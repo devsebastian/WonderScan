@@ -33,7 +33,7 @@ import com.devsebastian.wonderscan.activity.CropAndListFramesActivity
 import com.devsebastian.wonderscan.adapter.GalleryAdapter
 import java.util.*
 
-class GalleryFragment : Fragment() {
+open class GalleryFragment : Fragment() {
     private lateinit var adapter: GalleryAdapter
 
     override fun onResume() {
