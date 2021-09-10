@@ -15,33 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
  */
+package com.devsebastian.wonderscan.data
 
-package com.devsebastian.wonderscan;
+import java.io.Serializable
 
-import org.opencv.core.Mat;
-
-public class BrightnessAndContrastController {
-    double brightness, contrast;
-
-    public BrightnessAndContrastController(double brightness, double contrast) {
-        this.brightness = brightness;
-        this.contrast = contrast;
-    }
-
-    public Mat setBrightness(Mat sourceMat, double value) {
-        brightness = value;
-        return process(sourceMat);
-    }
-
-    public Mat setContrast(Mat sourceMat, double value) {
-        contrast = value;
-        return process(sourceMat);
-    }
-
-    private Mat process(Mat sourceMat) {
-        Mat mat = new Mat();
-        sourceMat.copyTo(mat);
-        mat.convertTo(mat, -1, contrast, brightness);
-        return mat;
-    }
+class Frame : Serializable {
+    var id: Long = 0
+    var index: Long = 0
+    var timeInMillis: Long = 0
+    var angle = 0
+    var name: String? = null
+    var note: String? = null
+    var ocr: String? = null
 }

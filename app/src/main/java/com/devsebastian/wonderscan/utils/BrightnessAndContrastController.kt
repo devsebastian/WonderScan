@@ -15,35 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
  */
+package com.devsebastian.wonderscan.utils
 
-package com.devsebastian.wonderscan.view;
+import org.opencv.core.Mat
 
-
-import android.content.Context;
-import android.util.AttributeSet;
-import android.widget.FrameLayout;
-
-/**
- * A RelativeLayout that will always be square -- same width and height,
- * where the height is based off the width.
- */
-public class SquareFrameLayout extends FrameLayout {
-
-    public SquareFrameLayout(Context context) {
-        super(context);
+class BrightnessAndContrastController(var brightness: Double, var contrast: Double) {
+    fun setBrightness(sourceMat: Mat, value: Double): Mat {
+        brightness = value
+        return process(sourceMat)
     }
 
-    public SquareFrameLayout(Context context, AttributeSet attrs) {
-        super(context, attrs);
+    fun setContrast(sourceMat: Mat, value: Double): Mat {
+        contrast = value
+        return process(sourceMat)
     }
 
-    public SquareFrameLayout(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
+    private fun process(sourceMat: Mat): Mat {
+        val mat = Mat()
+        sourceMat.copyTo(mat)
+        mat.convertTo(mat, -1, contrast, brightness)
+        return mat
     }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, widthMeasureSpec);
-    }
-
 }

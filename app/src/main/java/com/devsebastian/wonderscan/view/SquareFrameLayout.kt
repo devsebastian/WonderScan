@@ -15,35 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
  */
+package com.devsebastian.wonderscan.view
 
-package com.devsebastian.wonderscan.data;
+import android.widget.FrameLayout
+import android.content.*
+import android.util.AttributeSet
 
-public class Document {
-    private String name;
-    private long id;
-    private long dateTime;
+/**
+ * A RelativeLayout that will always be square -- same width and height,
+ * where the height is based off the width.
+ */
+class SquareFrameLayout : FrameLayout {
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public long getDateTime() {
-        return dateTime;
-    }
-
-    public void setDateTime(long dateTime) {
-        this.dateTime = dateTime;
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, widthMeasureSpec)
     }
 }
