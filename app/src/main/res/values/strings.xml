@@ -18,7 +18,7 @@
 
 <resources>
     <string name="app_name">WonderScan</string>
-    <string name="made_in_india">This app was made with love in India. If you want to help support us, please click this message to share this app with your friends and loved ones!</string>
+    <string name="made_in_india">This app is 100% free, open-source and ad-free. If you want to help support us, tap on this message to share this app with your friends and loved ones.</string>
 
     <!-- intents -->
     <string name="intent_angle">angle</string>
