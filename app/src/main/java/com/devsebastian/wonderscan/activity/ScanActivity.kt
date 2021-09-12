@@ -23,7 +23,6 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.os.Bundle
 import android.util.Log
-import android.util.Pair
 import android.view.*
 import android.widget.*
 import androidx.camera.core.*
@@ -31,18 +30,19 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.devsebastian.wonderscan.utils.DBHelper
+import com.devsebastian.wonderscan.MyApplication
 import com.devsebastian.wonderscan.R
-import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.utils.DetectBox
-import com.devsebastian.wonderscan.data.Frame
+import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.view.ScanView
+import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -50,16 +50,15 @@ class ScanActivity : BaseActivity() {
     private val requestCodePermissions = 1001
     private val requiredPermissions: Array<String> =
         arrayOf("android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE")
-    private var docId: Long = 0
     private var angle = 0
     private lateinit var scanView: ScanView
     private lateinit var viewFinder: PreviewView
     private lateinit var captureProgress: ProgressBar
     private lateinit var finalImage: ImageView
     private lateinit var pageCount: TextView
-    private lateinit var paths: MutableList<Pair<String, String>>
     private var executor: Executor = Executors.newSingleThreadExecutor()
-    private lateinit var dbHelper: DBHelper
+    private lateinit var viewModel: ScanActivityViewModel
+    private var count = 0
 
     @ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,6 +67,12 @@ class ScanActivity : BaseActivity() {
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
+        (application as MyApplication).database?.let { db ->
+            viewModel = ViewModelProvider(
+                this,
+                ScanActivityViewModelFactory(db.documentDao(), db.frameDao())
+            ).get(ScanActivityViewModel::class.java)
+        }
         setContentView(R.layout.activity_scan)
         captureProgress = findViewById(R.id.pb_scan)
         finalImage = findViewById(R.id.iv_recent_capture)
@@ -75,42 +80,29 @@ class ScanActivity : BaseActivity() {
         viewFinder = findViewById(R.id.viewFinder)
         scanView = findViewById(R.id.scan_view)
         pageCount = findViewById(R.id.page_count)
-        paths = ArrayList()
         val intent = intent
         if (intent != null) {
-            docId = intent.getLongExtra(getString(R.string.intent_document_id), -1)
+            val docId = intent.getStringExtra(getString(R.string.intent_document_id))
+            if (docId != null) {
+                viewModel.getPageCount(docId).observe(this) { count -> this.count = count }
+            }
         }
         val width = Utils.getDeviceWidth()
         val height = (width * (4 / 3f)).toInt()
         frameLayout.layoutParams = LinearLayout.LayoutParams(width, height)
-        dbHelper = DBHelper(this)
         finalImage.setOnClickListener {
-            var count: Long = 0
-            if (docId == -1L) {
-                val simpleDateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
-                docId = dbHelper.insertDocument(
-                    getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
-                )
-            } else {
-                count = dbHelper.getPageCount(docId)
+            val simpleDateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
+            val name = getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
+            val job = viewModel.capture(name, angle, count)
+            job.invokeOnCompletion {
+                val i = Intent(this@ScanActivity, ListFramesActivity::class.java)
+                i.putExtra(getString(R.string.intent_document_id), viewModel.docId)
+                startActivity(i)
+                finish()
             }
-            for (i in paths.indices) {
-                val path = paths[i]
-                val frame = Frame()
-                frame.timeInMillis = System.currentTimeMillis()
-                frame.index = count + i
-                frame.angle = angle
-                val frameId = dbHelper.insertFrame(docId, frame)
-                dbHelper.updateSourcePath(frameId, path.first)
-                dbHelper.updateCroppedPath(frameId, path.second)
-            }
-            val i = Intent(this@ScanActivity, ListFramesActivity::class.java)
-            i.putExtra(getString(R.string.intent_document_id), docId)
-            startActivity(i)
-            finish()
         }
         if (allPermissionsGranted()) {
-            startCamera() //start camera if permission has been granted by user
+            startCamera()
         } else {
             ActivityCompat.requestPermissions(this, requiredPermissions, requestCodePermissions)
         }
@@ -135,6 +127,7 @@ class ScanActivity : BaseActivity() {
         permissions: Array<String?>,
         grantResults: IntArray
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == requestCodePermissions) {
             if (allPermissionsGranted()) {
                 startCamera()
@@ -150,14 +143,8 @@ class ScanActivity : BaseActivity() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-                bindPreview(cameraProvider)
-            } catch (e: ExecutionException) {
-                // No errors need to be handled for this Future.
-                // This should never be reached.
-            } catch (e: InterruptedException) {
-            }
+            val cameraProvider = cameraProviderFuture.get()
+            bindPreview(cameraProvider)
         }, ContextCompat.getMainExecutor(this))
     }
 
@@ -165,10 +152,10 @@ class ScanActivity : BaseActivity() {
         if (requestCode == CROP_ACTIVITY && resultCode == RESULT_OK && data != null) {
             val croppedPath = data.getStringExtra(getString(R.string.intent_cropped_path))
             val sourcePath = data.getStringExtra(getString(R.string.intent_source_path))
-            paths.add(Pair(sourcePath, croppedPath))
+            viewModel.addPath(sourcePath!!, croppedPath!!)
             finalImage.setImageBitmap(BitmapFactory.decodeFile(croppedPath))
             if (pageCount.visibility != View.VISIBLE) pageCount.visibility = View.VISIBLE
-            pageCount.text = paths.size.toString()
+            pageCount.text = viewModel.pathsCount().toString()
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -201,6 +188,7 @@ class ScanActivity : BaseActivity() {
                 }
             }
         })
+
         captureImageBtn.setOnClickListener {
             captureProgress.visibility = View.VISIBLE
             val file = Utils.createPhotoFile(this)
@@ -219,7 +207,7 @@ class ScanActivity : BaseActivity() {
                     }
 
                     override fun onError(error: ImageCaptureException) {
-                        Log.d(TAG, Log.getStackTraceString(error))
+                        Log.e(TAG, Log.getStackTraceString(error))
                     }
                 })
         }

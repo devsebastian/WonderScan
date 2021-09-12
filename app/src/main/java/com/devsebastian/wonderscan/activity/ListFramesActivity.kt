@@ -17,38 +17,34 @@
  */
 package com.devsebastian.wonderscan.activity
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.*
 import android.graphics.pdf.PdfDocument
 import android.os.Bundle
 import android.view.*
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.devsebastian.wonderscan.*
 import com.devsebastian.wonderscan.adapter.ProgressFramesAdapter
-import com.devsebastian.wonderscan.utils.ExportPdf
 import com.devsebastian.wonderscan.data.Document
-import com.devsebastian.wonderscan.data.Frame
-import com.devsebastian.wonderscan.utils.DBHelper
-import com.devsebastian.wonderscan.utils.Filter
-import com.devsebastian.wonderscan.utils.Utils
+import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.opencv.imgcodecs.Imgcodecs
 import java.io.IOException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import kotlin.math.min
+
 
 class ListFramesActivity : BaseActivity() {
-    private var docId: Long = 0
     private var pdfDocument: PdfDocument? = null
-    private lateinit var dbHelper: DBHelper
-    private lateinit var document: Document
-    private var frames: MutableList<Frame> = ArrayList()
     private lateinit var framesAdapter: ProgressFramesAdapter
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -56,24 +52,28 @@ class ListFramesActivity : BaseActivity() {
         return super.onCreateOptionsMenu(menu)
     }
 
+    private var resultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    viewModel.exportPdf(uri)
+                }
+            }
+        }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_export_pdf -> {
-                lifecycleScope.launch(Dispatchers.Default) {
-                    pdfDocument = ExportPdf.exportPdf(dbHelper, frames)
-                    Utils.sendCreateFileIntent(
-                        this@ListFramesActivity,
-                        this@ListFramesActivity.document.name!!,
-                        "application/pdf",
-                        SAVE_PDF_INTENT_CODE
-                    )
-                }
+                viewModel.sendCreateFileIntent(
+                    "application/pdf",
+                    resultLauncher
+                )
             }
             R.id.menu_delete -> {
-                Utils.showConfirmDeleteDialog(this, docId)
+                showConfirmDeleteDialog()
             }
             R.id.menu_rename -> {
-                Utils.showDocumentRenameDialog(this, docId, document.name)
+                showRenameDialog()
             }
             android.R.id.home -> {
                 finish()
@@ -82,15 +82,46 @@ class ListFramesActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun processFrame(context: Context, frameId: Long) {
-        val file = Utils.createPhotoFile(context)
-        val mat = Imgcodecs.imread(dbHelper.getCroppedPath(frameId))
-        val editedMat = Filter.magicColor(mat)
-        Imgcodecs.imwrite(file.absolutePath, editedMat)
-        dbHelper.updateEditedPath(frameId, file.absolutePath)
-        mat.release()
-        editedMat.release()
+
+    private fun showRenameDialog() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            val document: Document = viewModel.getDocument()
+            val builder = AlertDialog.Builder(this@ListFramesActivity)
+            builder.setTitle("Rename")
+            val frameLayout = FrameLayout(application)
+            val editText = EditText(application)
+            val layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams.setMargins(50, 12, 50, 12)
+            editText.layoutParams = layoutParams
+            editText.setText(document.name)
+            frameLayout.addView(editText)
+            builder.setView(frameLayout)
+            builder.setNegativeButton("Cancel", null)
+            builder.setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                document.name = editText.text.toString()
+                viewModel.updateDocument(document)
+            }
+            builder.create().show()
+        }
     }
+
+    private fun showConfirmDeleteDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Confirm Delete")
+        builder.setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
+        builder.setNegativeButton("Cancel", null)
+        builder.setPositiveButton("Delete") { _, _ ->
+            viewModel.delete()
+            finish()
+        }
+        builder.create().show()
+    }
+
+    lateinit var viewModel: ListFrameActivityViewModel
+    var docId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,24 +132,48 @@ class ListFramesActivity : BaseActivity() {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.setHomeButtonEnabled(true)
         }
-        dbHelper = DBHelper(this)
-        val intent = intent
-        if (intent != null) {
-            docId = intent.getLongExtra(getString(R.string.intent_document_id), -1)
-            if (docId == -1L) {
-                Toast.makeText(this, getString(R.string.toast_error_message), Toast.LENGTH_SHORT)
-                    .show()
-                finish()
-                return
-            }
-            document = dbHelper.getDocument(docId)
-            frames = dbHelper.getAllFrames(docId)
-            (findViewById<View?>(R.id.toolbar_title) as TextView).text =
-                dbHelper.getDocumentName(docId)
+        docId = intent.getStringExtra(getString(R.string.intent_document_id))
+        if (docId == null) {
+            Toast.makeText(this, getString(R.string.toast_error_message), Toast.LENGTH_SHORT)
+                .show()
+            finish()
+            return
         }
-        framesAdapter = ProgressFramesAdapter(this, docId, frames)
+
+        framesAdapter = ProgressFramesAdapter(this, docId!!, ArrayList())
+
+        (application as MyApplication).database?.let { db ->
+            viewModel = ViewModelProvider(
+                this,
+                ListFrameActivityViewModelFactory(
+                    application as MyApplication,
+                    db.documentDao(),
+                    db.frameDao(),
+                    docId!!
+                )
+            ).get(ListFrameActivityViewModel::class.java)
+        }
+
+        viewModel.document.observe(this) { doc ->
+            doc?.name?.let {
+                (findViewById<View?>(R.id.toolbar_title) as TextView).text = it
+            }
+        }
+
+        viewModel.frames.observe(this) { frames ->
+            var datasetChanged = true
+            if (framesAdapter.frames.size == frames.size) datasetChanged = false
+            framesAdapter.frames = frames
+//            if (datasetChanged)
+                framesAdapter.notifyDataSetChanged()
+//            else
+//                for(i in frames.indices) {
+//                    framesAdapter.notifyItemChanged(i)
+//                }
+        }
+
         val itemTouchHelper = ItemTouchHelper(getItemTouchHelperCallback())
-        processUnprocessedFrames()
+        viewModel.processUnprocessedFrames(docId!!)
         val fab = findViewById<View?>(R.id.fab)
         val recyclerView = findViewById<RecyclerView?>(R.id.rv_frames)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
@@ -131,6 +186,16 @@ class ListFramesActivity : BaseActivity() {
             finish()
         }
         itemTouchHelper.attachToRecyclerView(recyclerView)
+
+        recyclerView.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_UP -> {
+                    viewModel.update(framesAdapter.frames)
+                }
+            }
+            false
+        }
+
         Toast.makeText(
             this,
             "Hint: Re-order pages by long pressing a page and dragging it to the appropriate position",
@@ -148,18 +213,12 @@ class ListFramesActivity : BaseActivity() {
                 val from = viewHolder.adapterPosition
                 val to = target.adapterPosition
                 framesAdapter.swap(from, to)
-                dbHelper.swapFrames(
-                    frames[from].id,
-                    from.toLong(),
-                    frames[to].id,
-                    to.toLong()
-                )
-                return false
+                return true
             }
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+            }
 
-            //defines the enabled move directions in each state (idle, swiping, dragging).
             override fun getMovementFlags(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder
@@ -185,26 +244,10 @@ class ListFramesActivity : BaseActivity() {
                 }
             }
         } else if (requestCode == VIEW_PAGE_ACTIVITY) {
-            processUnprocessedFrames()
+            viewModel.processUnprocessedFrames(docId!!)
         }
     }
 
-    private fun processUnprocessedFrames() {
-        val executorService: ExecutorService = Executors.newFixedThreadPool(min(9, frames.size))
-        for (i in frames.indices) {
-            val frameId = frames[i].id
-            if (dbHelper.getEditedPath(frameId) == null) {
-                executorService.submit {
-                    val frame = frames[i]
-                    processFrame(this, frame.id)
-                    runOnUiThread { framesAdapter.notifyItemChanged(i) }
-                }
-            }
-        }
-        if (!executorService.isShutdown) {
-            executorService.shutdown()
-        }
-    }
 
     companion object {
         const val VIEW_PAGE_ACTIVITY = 101

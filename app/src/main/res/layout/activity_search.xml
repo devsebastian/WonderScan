@@ -35,7 +35,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@null"
-            android:hint="Search..."
+            android:maxLines="1"
+            android:hint="Search any document"
             android:paddingHorizontal="12dp" />
     </androidx.appcompat.widget.Toolbar>
 

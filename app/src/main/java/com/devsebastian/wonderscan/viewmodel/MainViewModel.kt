@@ -15,10 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.devsebastian.wonderscan.activity
 
-import androidx.appcompat.app.AppCompatActivity
+package com.devsebastian.wonderscan.viewmodel
 
-open class BaseActivity : AppCompatActivity() {
-    // properties that are shared between all activities can be added here later
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.devsebastian.wonderscan.dao.FrameDao
+import kotlinx.coroutines.launch
+
+open class MainViewModel(
+    private val frameDao: FrameDao?
+) : ViewModel() {
+
+    fun getPageCount(docId: String): LiveData<Int> {
+        lateinit var count: LiveData<Int>
+        viewModelScope.launch {
+            count = frameDao?.getFrameCount(docId) ?: MutableLiveData(0)
+        }
+        return count
+    }
+
+    fun getFirstFrameImagePath(docId: String): LiveData<String>? {
+        return frameDao?.getFrameUri(docId)
+    }
 }

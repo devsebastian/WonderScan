@@ -41,7 +41,6 @@ open class GalleryFragment : Fragment() {
         adapter.reset()
     }
 
-    // get all images from external storage
     private fun getAllImages(): MutableList<String> {
         val uris: MutableList<String> = ArrayList()
         val projection = arrayOf(MediaStore.MediaColumns.DATA)
@@ -68,7 +67,6 @@ open class GalleryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         val v = inflater.inflate(R.layout.fragment_gallery, container, false)
         val recyclerView: RecyclerView = v.findViewById(R.id.recycler_view)
         recyclerView.setHasFixedSize(true)

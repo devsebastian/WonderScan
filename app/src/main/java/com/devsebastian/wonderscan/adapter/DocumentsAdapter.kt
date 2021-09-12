@@ -21,6 +21,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,32 +30,31 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
-import com.devsebastian.wonderscan.utils.DBHelper
 import com.devsebastian.wonderscan.R
-import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.activity.ListFramesActivity
+import com.devsebastian.wonderscan.activity.MainActivity
 import com.devsebastian.wonderscan.data.Document
+import com.devsebastian.wonderscan.utils.Utils
+import com.devsebastian.wonderscan.viewmodel.MainActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DocumentsAdapter(activity: Activity, private var data: ArrayList<Document>) :
+class DocumentsAdapter(
+    private val activity: Activity,
+    private var data: MutableList<Document>,
+    val viewModel: MainViewModel
+) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var simpleDateFormat: SimpleDateFormat =
         SimpleDateFormat("dd MMM, yyyy hh:mm", Locale.getDefault())
-    var context = activity
     private var maxWidth: Int
-    var dbHelper: DBHelper = DBHelper(context)
 
     @SuppressLint("NotifyDataSetChanged")
-    fun updateDocuments(documents: ArrayList<Document>) {
+    fun updateDocuments(documents: MutableList<Document>) {
         data = documents
         data.add(Document())
         notifyDataSetChanged()
-    }
-
-    fun insertDocument(document: Document) {
-        data.add(0, document)
-        notifyItemInserted(0)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -75,28 +75,24 @@ class DocumentsAdapter(activity: Activity, private var data: ArrayList<Document>
             val h = holder as NormalViewHolder
             h.title.text = document.name
             h.subtitle.text = simpleDateFormat.format(Date(document.dateTime))
-            h.sheetNumber.text = String.format(
-                Locale.getDefault(),
-                "%d pages",
-                dbHelper.getPageCount(document.id)
-            )
-            holder.itemView.setOnClickListener {
-                val intent = Intent(context, ListFramesActivity::class.java)
-                intent.putExtra(context.getString(R.string.intent_document_id), document.id)
-                context.startActivity(intent)
+            viewModel.getPageCount(document.id).observe(activity as MainActivity) { count ->
+                h.sheetNumber.text = String.format(
+                    Locale.getDefault(),
+                    "%d pages", count
+                )
             }
-            Glide.with(context).load(dbHelper.getFirstFrameImagePath(document.id))
-                .downsample(DownsampleStrategy.AT_MOST).into(h.imageView)
+            holder.itemView.setOnClickListener {
+                val intent = Intent(activity, ListFramesActivity::class.java)
+                intent.putExtra(activity.getString(R.string.intent_document_id), document.id)
+                activity.startActivity(intent)
+            }
+            viewModel.getFirstFrameImagePath(document.id)?.observe(activity) { uri ->
+                Glide.with(activity).load(uri)
+                    .downsample(DownsampleStrategy.AT_MOST).into(h.imageView)
+            }
         } else {
-            holder.itemView.setOnClickListener { shareAppLink(context) }
+            holder.itemView.setOnClickListener { Utils.shareAppLink(activity) }
         }
-    }
-
-    private fun shareAppLink(context: Context) {
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_message))
-        context.startActivity(intent)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -124,7 +120,6 @@ class DocumentsAdapter(activity: Activity, private var data: ArrayList<Document>
         private const val TYPE_FOOTER = 1
     }
 
-    // RecyclerView recyclerView;
     init {
         val deviceWidth = Utils.getDeviceWidth()
         maxWidth = deviceWidth / 4

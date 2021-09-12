@@ -19,16 +19,16 @@ package com.devsebastian.wonderscan.utils
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Application
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
-import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
 import com.devsebastian.wonderscan.R
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -36,6 +36,7 @@ import org.opencv.core.Mat
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
+import java.util.*
 
 object Utils {
 
@@ -46,6 +47,13 @@ object Utils {
 
     }
 
+    fun shareAppLink(context: Context) {
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_message))
+        context.startActivity(intent)
+    }
+
     fun createPhotoFile(context: Context): File {
         val filename = System.currentTimeMillis().toString() + ".png"
         val folder = File(context.filesDir, folderName)
@@ -53,41 +61,7 @@ object Utils {
         return File(folder, filename)
     }
 
-    fun showConfirmDeleteDialog(activity: Activity, docId: Long) {
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Confirm Delete")
-        builder.setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Delete") { _, _ ->
-            val dbHelper = DBHelper(activity)
-            dbHelper.deleteDocument(docId)
-            activity.finish()
-        }
-        builder.create().show()
-    }
 
-    fun showDocumentRenameDialog(activity: Activity, docId: Long, name: String?) {
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Rename")
-        val frameLayout = FrameLayout(activity)
-        val editText = EditText(activity)
-        val layoutParams = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        layoutParams.setMargins(50, 12, 50, 12)
-        editText.layoutParams = layoutParams
-        editText.setText(name)
-        frameLayout.addView(editText)
-        builder.setView(frameLayout)
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-            val dbHelper = DBHelper(activity)
-            dbHelper.renameDocument(docId, editText.text.toString())
-            (activity.findViewById<View?>(R.id.toolbar_title) as TextView).text = name
-        }
-        builder.create().show()
-    }
 
     fun rotateMat(mat: Mat, angle: Int) {
         when (angle) {
@@ -120,6 +94,14 @@ object Utils {
         intent.type = type
         intent.putExtra(Intent.EXTRA_TITLE, name)
         activity.startActivityForResult(intent, code)
+    }
+
+    fun sendCreateFileIntent(name: String, type: String?, resultLauncher: ActivityResultLauncher<Intent>) {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.type = type
+        intent.putExtra(Intent.EXTRA_TITLE, name)
+        resultLauncher.launch(intent)
     }
 
     fun removeImageFromCache(path: String?) {

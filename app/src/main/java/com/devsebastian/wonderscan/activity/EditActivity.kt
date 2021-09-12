@@ -25,11 +25,14 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
+import androidx.lifecycle.ViewModelProvider
 import com.devsebastian.wonderscan.*
+import com.devsebastian.wonderscan.data.Frame
 import com.devsebastian.wonderscan.utils.BrightnessAndContrastController
-import com.devsebastian.wonderscan.utils.DBHelper
 import com.devsebastian.wonderscan.utils.Filter
 import com.devsebastian.wonderscan.utils.Utils
+import com.devsebastian.wonderscan.viewmodel.EditActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.EditActivityViewModelFactory
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.jsibbold.zoomage.ZoomageView
 import org.opencv.core.Core
@@ -52,15 +55,14 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
     private lateinit var tvContrast: TextView
     private var modifyToolsIsVisible = false
     private var currentActiveId = R.id.iv_original_image
-    private var editedPath: String? = null
-    private var croppedPath: String? = null
+    private lateinit var frame: Frame
     private var executorService: ExecutorService = Executors.newFixedThreadPool(5)
     private lateinit var brightnessAndContrastController: BrightnessAndContrastController
 
     private fun setupPreview() {
-        croppedMat = Utils.readMat(croppedPath)
-        if (editedPath != null) {
-            editedMat = Utils.readMat(editedPath)
+        croppedMat = Utils.readMat(frame.croppedUri)
+        if (frame.editedUri != null) {
+            editedMat = Utils.readMat(frame.editedUri)
         } else {
             editedMat = Mat()
             croppedMat.copyTo(editedMat)
@@ -134,10 +136,11 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
         findViewById<View?>(currentActiveId).setPadding(0, 0, 0, 0)
     }
 
+    lateinit var viewModel: EditActivityViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit)
-        val dbHelper = DBHelper(this)
         setActive(R.id.iv_auto)
         val frameId = intent.getLongExtra(getString(R.string.intent_frame_id), -1)
         if (frameId == -1L) {
@@ -145,17 +148,27 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
             finish()
             return
         }
-        editedPath = dbHelper.getEditedPath(frameId)
-        croppedPath = dbHelper.getCroppedPath(frameId)
+
+
         mainImageView = findViewById(R.id.iv_edit)
         modifyToolsLayout = findViewById(R.id.ll_modify_tools)
         tvBrightness = findViewById(R.id.tv_brightness)
         tvContrast = findViewById(R.id.tv_contrast)
         val bottomNavigationView = findViewById<BottomNavigationView?>(R.id.bottom_navigation_view)
         modifyToolsLayout.visibility = View.GONE
-        setupPreview()
-        setupFilterButtons()
-        setupBrightnessAndContrast()
+
+        (application as MyApplication).database?.let { db ->
+            viewModel = ViewModelProvider(this, EditActivityViewModelFactory(application as MyApplication, db.frameDao())).get(
+                EditActivityViewModel::class.java)
+            viewModel.getFrame(frameId)
+        }
+
+        viewModel.frame?.observe(this) {frame ->
+            this.frame = frame
+            setupPreview()
+            setupFilterButtons()
+            setupBrightnessAndContrast()
+        }
         bottomNavigationView.setOnNavigationItemSelectedListener(this)
         findViewById<View?>(R.id.iv_black_and_white).setOnClickListener(this)
         findViewById<View?>(R.id.iv_auto).setOnClickListener(this)
@@ -187,8 +200,8 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
             R.id.menu_save -> {
                 findViewById<View?>(R.id.pb_edit).visibility = View.VISIBLE
                 executorService.submit {
-                    Utils.saveMat(editedMat, editedPath)
-                    Utils.saveMat(croppedMat, croppedPath)
+                    Utils.saveMat(editedMat, frame.editedUri)
+                    Utils.saveMat(croppedMat, frame.croppedUri)
                     val resultIntent = Intent()
                     resultIntent.putExtra(
                         getString(R.string.intent_frame_position),

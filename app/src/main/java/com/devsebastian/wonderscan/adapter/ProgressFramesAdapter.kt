@@ -29,7 +29,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.devsebastian.wonderscan.utils.DBHelper
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.activity.ListFramesActivity
 import com.devsebastian.wonderscan.activity.ViewPageActivity
@@ -38,13 +37,17 @@ import java.util.*
 
 class ProgressFramesAdapter(
     var activity: Activity,
-    private var docId: Long,
-    private var data: MutableList<Frame>
+    private var docId: String,
+    var frames: List<Frame>
 ) : RecyclerView.Adapter<ProgressFramesAdapter.ViewHolder?>() {
-    var dbHelper: DBHelper = DBHelper(activity)
+
     fun swap(from: Int, to: Int) {
-        Collections.swap(data, from, to)
+        Collections.swap(frames, from, to)
         notifyItemMoved(from, to)
+    }
+
+    fun get(index: Int): Frame {
+        return frames[index]
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -53,12 +56,8 @@ class ProgressFramesAdapter(
         return ViewHolder(listItem)
     }
 
-    fun setFrames(frames: MutableList<Frame>) {
-        data = frames
-    }
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val frame = data[position]
+        val frame = frames[position]
         holder.itemView.setOnClickListener {
             val intent = Intent(activity, ViewPageActivity::class.java)
             intent.putExtra(activity.getString(R.string.intent_document_id), docId)
@@ -70,13 +69,20 @@ class ProgressFramesAdapter(
         } else {
             holder.textView.text = frame.name
         }
-        Glide.with(activity).load(dbHelper.getPath(frame.id))
-            .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true).into(holder.imageView)
-        holder.progressBar.visibility = View.GONE
+        if (frame.editedUri == null) {
+            Glide.with(activity).load(frame.uri)
+                .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
+                .into(holder.imageView)
+        } else {
+            Glide.with(activity).load(frame.editedUri)
+                .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
+                .into(holder.imageView)
+            holder.progressBar.visibility = View.GONE
+        }
     }
 
     override fun getItemCount(): Int {
-        return data.size
+        return frames.size
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

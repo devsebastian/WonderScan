@@ -47,9 +47,10 @@
     <string name="key_developer">key_developer</string>
     <string name="choose_email_client">Choose Email Client</string>
 
-    <string name="share_message">Support Indian Apps, Use this amazing app - WonderScan to scan documents. It provides 100% data security and privacy. Developed and designed completely in India by Indian Engineers!\nhttps://play.google.com/store/apps/details?id=com.devsebastian.wonderscan </string>
+    <string name="share_message">Hey! Use this amazing document scanning app - WonderScan to scan documents. It provides 100% data security and privacy as all data is stored on the device and no data is sent to any kind of server! \nhttps://play.google.com/store/apps/details?id=com.devsebastian.wonderscan </string>
     <string name="feedback_message">If you\'re not happy with the product or want to suggest changes, you can write to me directly at developer.devsebastian@gmail.com:)</string>
     <string name="gallery_message">Select the images and press proceed to automatically create a WonderScan document from the selected images.</string>
+    <string name="preference_share">preference_share</string>
 
     <string-array name="themes">
         <item>@string/dark_theme</item>

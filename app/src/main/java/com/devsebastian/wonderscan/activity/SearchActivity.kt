@@ -20,26 +20,30 @@ package com.devsebastian.wonderscan.activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.MenuItem
 import android.widget.EditText
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.devsebastian.wonderscan.utils.DBHelper
+import com.devsebastian.wonderscan.MyApplication
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.adapter.DocumentsAdapter
-import com.devsebastian.wonderscan.data.Document
-import java.util.*
+import com.devsebastian.wonderscan.viewmodel.MainActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.SearchActivityViewModel
+import com.devsebastian.wonderscan.viewmodel.SearchActivityViewModelFactory
 
 class SearchActivity : BaseActivity() {
-    private lateinit var dbHelper: DBHelper
     private lateinit var documentsAdapter: DocumentsAdapter
-    private lateinit var documents: ArrayList<Document>
+    lateinit var viewModel: SearchActivityViewModel
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             onBackPressed()
         }
         return super.onOptionsItemSelected(item)
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,19 +54,33 @@ class SearchActivity : BaseActivity() {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
         }
         val searchEt = findViewById<EditText?>(R.id.et_search)
-        dbHelper = DBHelper(this)
-        documents = dbHelper.getAllDocuments()
-        documentsAdapter = DocumentsAdapter(this, documents)
+
+        (application as MyApplication).database?.let { db ->
+            viewModel = ViewModelProvider(
+                this,
+                SearchActivityViewModelFactory(db.documentDao(), db.frameDao())
+            ).get(
+                SearchActivityViewModel::class.java
+            )
+        }
+
         val recyclerView = findViewById<RecyclerView?>(R.id.recycler_view)
         recyclerView.setHasFixedSize(true)
         recyclerView.layoutManager = LinearLayoutManager(this)
+        documentsAdapter = DocumentsAdapter(this, ArrayList(), viewModel)
         recyclerView.adapter = documentsAdapter
+
+        viewModel.documents.observe(this) { documents ->
+            Log.d("devdevdev", "$documents")
+            documentsAdapter.updateDocuments(documents)
+            documentsAdapter.notifyDataSetChanged()
+        }
+
         searchEt.requestFocus()
         searchEt.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence?, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence?, i: Int, i1: Int, i2: Int) {
-                documents = dbHelper.searchDocuments(charSequence.toString())
-                documentsAdapter.updateDocuments(documents)
+                viewModel.search(charSequence.toString())
             }
 
             override fun afterTextChanged(editable: Editable?) {}

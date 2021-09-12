@@ -44,13 +44,13 @@ class ExportPdf {
             pdfDocument.finishPage(page)
         }
 
-        fun exportPdf(dbHelper: DBHelper, frames: List<Frame>): PdfDocument {
+        fun exportPdf(frames: List<Frame>): PdfDocument {
             var bitmap: Bitmap?
             val pdf = PdfDocument()
             var width = 0
             var height = 0
             for (frame in frames) {
-                bitmap = BitmapFactory.decodeFile(dbHelper.getEditedPath(frame.id))
+                bitmap = BitmapFactory.decodeFile(frame.editedUri)
                 if (bitmap.width > width) width = bitmap.width
                 if (bitmap.height > height) height = bitmap.height
                 createPage(pdf, bitmap, width, height)

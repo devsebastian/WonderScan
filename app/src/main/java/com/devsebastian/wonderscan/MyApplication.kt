@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.devsebastian.wonderscan.activity
 
-import androidx.appcompat.app.AppCompatActivity
+package com.devsebastian.wonderscan
 
-open class BaseActivity : AppCompatActivity() {
-    // properties that are shared between all activities can be added here later
+import android.app.Application
+import com.devsebastian.wonderscan.utils.MyDatabase
+
+class MyApplication : Application() {
+    val database by lazy { MyDatabase.geDatabase(this) }
 }

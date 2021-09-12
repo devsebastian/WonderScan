@@ -21,7 +21,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menu_export_pdf"
-        android:icon="@drawable/ic_share"
+        android:icon="@drawable/ic_pdf"
         android:orderInCategory="0"
         app:iconTint="@color/colorTextPrimary"
         android:title="Export PDF"

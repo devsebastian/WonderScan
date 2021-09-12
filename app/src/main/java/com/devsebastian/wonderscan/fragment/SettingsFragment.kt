@@ -17,7 +17,6 @@
  */
 package com.devsebastian.wonderscan.fragment
 
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -26,12 +25,10 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreference
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.utils.Utils
 
 open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChangeListener,
     Preference.OnPreferenceChangeListener {
@@ -43,94 +40,47 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
         val privacyPolicyPreference =
             findPreference<Preference?>(getString(R.string.preference_privacy_policy))
         val rateUsPreference = findPreference<Preference?>(getString(R.string.preference_rate_us))
-        val systemPreference =
-            findPreference<SwitchPreference?>(getString(R.string.key_system_theme))
-        val defaultThemePreference =
-            findPreference<ListPreference?>(getString(R.string.key_default_theme))
         val developerPreference = findPreference<Preference?>(getString(R.string.key_developer))
         val feedbackPreference =
             findPreference<Preference?>(getString(R.string.preference_feedback))
-        if (feedbackPreference != null) {
-            feedbackPreference.onPreferenceClickListener =
-                Preference.OnPreferenceClickListener {
-                    sendFeedback(
-                        requireContext(), "Feedback"
-                    )
-                    false
-                }
-        }
-        if (privacyPolicyPreference != null) {
-            privacyPolicyPreference.onPreferenceClickListener =
-                Preference.OnPreferenceClickListener {
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://sites.google.com/view/bharatscanprivacypolicy/home")
-                    )
-                    startActivity(intent)
-                    false
-                }
-        }
-        if (rateUsPreference != null) {
-            rateUsPreference.onPreferenceClickListener =
-                Preference.OnPreferenceClickListener {
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://play.google.com/store/apps/details?id=com.devsebastian.wonderscan")
-                    )
-                    startActivity(intent)
-                    false
-                }
-        }
-        if (developerPreference != null) {
-            developerPreference.onPreferenceClickListener =
-                Preference.OnPreferenceClickListener {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://devsebastian.me/"))
-                    startActivity(intent)
-                    false
-                }
-        }
-        if (defaultThemePreference != null) {
-            defaultThemePreference.isEnabled =
-                !preferences.getBoolean(getString(R.string.key_system_theme), false)
-            defaultThemePreference.onPreferenceChangeListener =
-                Preference.OnPreferenceChangeListener { _: Preference?, newValue: Any? ->
-                    if (newValue == getString(R.string.dark_theme)) {
-                        preferences.edit()
-                            .putBoolean(getString(R.string.preference_mode_night), true).apply()
-                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                    } else {
-                        preferences.edit()
-                            .putBoolean(getString(R.string.preference_mode_night), false).apply()
-                        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                    }
-                    false
-                }
-        }
-        if (systemPreference != null) {
-            systemPreference.onPreferenceChangeListener =
-                Preference.OnPreferenceChangeListener { preference: Preference, newValue: Any ->
-                    if (preference.key == getString(R.string.key_system_theme)) {
-                        val useSystemTheme = newValue as Boolean
-                        preferences.edit().putBoolean(
-                            getString(R.string.preference_use_system_theme),
-                            useSystemTheme
-                        ).apply()
-                        if (useSystemTheme) {
-                            if (defaultThemePreference != null) defaultThemePreference.isEnabled =
-                                false
-                        } else {
-                            if (defaultThemePreference != null) defaultThemePreference.isEnabled =
-                                true
-                            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                            } else {
-                                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                            }
-                        }
-                    }
-                    true
-                }
-        }
+        val sharePreference =
+            findPreference<Preference?>(getString(R.string.preference_share))
+
+
+        sharePreference?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                Utils.shareAppLink(requireContext())
+                false
+            }
+        feedbackPreference?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                sendFeedback()
+                false
+            }
+        privacyPolicyPreference?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://sites.google.com/view/bharatscanprivacypolicy/home")
+                )
+                startActivity(intent)
+                false
+            }
+        rateUsPreference?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=com.devsebastian.wonderscan")
+                )
+                startActivity(intent)
+                false
+            }
+        developerPreference?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://devsebastian.me/"))
+                startActivity(intent)
+                false
+            }
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {}
@@ -140,12 +90,12 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, s: String?) {}
 
-    companion object {
-        fun sendFeedback(context: Context, topic: String?) {
+    private fun sendFeedback() {
+        requireContext().let {
             var body: String? = null
             try {
-                val versionName = context.packageManager
-                    .getPackageInfo(context.packageName, 0).versionName
+                val versionName = it.packageManager
+                    .getPackageInfo(it.packageName, 0).versionName
                 body = """
 
 -----------------------------
@@ -157,17 +107,17 @@ Please don't remove this information
  Device Model: ${Build.MODEL}
  Device Manufacturer: ${Build.MANUFACTURER}"""
             } catch (e: PackageManager.NameNotFoundException) {
-                Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(it, e.message, Toast.LENGTH_SHORT).show()
             }
             val intent = Intent(Intent.ACTION_SEND)
             intent.setType("message/rfc822")
                 .putExtra(Intent.EXTRA_EMAIL, arrayOf<String?>("developer.devsebastian@gmail.com"))
-                .putExtra(Intent.EXTRA_SUBJECT, topic + ": " + context.getString(R.string.app_name))
+                .putExtra(Intent.EXTRA_SUBJECT, "Feedback" + ": " + it.getString(R.string.app_name))
                 .putExtra(Intent.EXTRA_TEXT, body)
-            context.startActivity(
+            it.startActivity(
                 Intent.createChooser(
                     intent,
-                    context.getString(R.string.choose_email_client)
+                    it.getString(R.string.choose_email_client)
                 )
             )
         }

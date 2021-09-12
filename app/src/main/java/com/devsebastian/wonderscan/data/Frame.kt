@@ -17,14 +17,32 @@
  */
 package com.devsebastian.wonderscan.data
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.ForeignKey.CASCADE
+import androidx.room.PrimaryKey
 import java.io.Serializable
+import java.util.*
 
-class Frame : Serializable {
-    var id: Long = 0
-    var index: Long = 0
-    var timeInMillis: Long = 0
-    var angle = 0
-    var name: String? = null
-    var note: String? = null
-    var ocr: String? = null
-}
+@Entity(
+    foreignKeys = [ForeignKey(
+        entity = Document::class,
+        childColumns = ["docId"],
+        parentColumns = ["id"],
+        onDelete = CASCADE
+    )]
+)
+class Frame(
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0,
+    var docId: String,
+    var index: Int,
+    var timeInMillis: Long,
+    var angle: Int,
+    var name: String? = null,
+    var note: String? = null,
+    var ocr: String? = null,
+    var uri: String,
+    var editedUri: String? = null,
+    var croppedUri: String? = null
+) : Serializable

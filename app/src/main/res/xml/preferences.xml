@@ -18,25 +18,15 @@
   -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <!--    <PreferenceCategory android:title="GENERAL">-->
-    <!--        <SwitchPreference-->
-    <!--            android:icon="@drawable/ic_image"-->
-    <!--            android:summary="Save Images to Gallery"-->
-    <!--            android:title="Files" />-->
-    <!--    </PreferenceCategory>-->
 
-    <PreferenceCategory android:title="THEME">
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="@string/key_system_theme"
-            android:title="Use system theme" />
-        <ListPreference
-            android:defaultValue="@string/dark_theme"
-            android:entries="@array/themes"
-            android:entryValues="@array/themes"
-            android:key="@string/key_default_theme"
-            android:title="Default app theme" />
+    <PreferenceCategory android:title="GENERAL">
+        <Preference
+            android:icon="@drawable/ic_share"
+            android:key="@string/preference_share"
+            android:summary="share this app with your friends!"
+            android:title="Share Wonderscan" />
     </PreferenceCategory>
+
     <PreferenceCategory android:title="ABOUT">
 
         <Preference
@@ -49,11 +39,6 @@
             android:icon="@drawable/ic_developer"
             android:summary="This app was designed and developed by Dev Sebastian"
             android:title="About Developer" />
-        <Preference
-            android:icon="@drawable/ic_thumbs_up"
-            android:key="@string/preference_rate_us"
-            android:summary="If you loved the app. please leave a 5 star review:)"
-            android:title="Rate WonderScan" />
 
         <Preference
             android:icon="@drawable/ic_doc"
@@ -61,11 +46,21 @@
             android:summary="Read our privacy policy"
             android:title="Privacy policy" />
 
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory android:title="FEEDBACK">
+
+        <Preference
+            android:icon="@drawable/ic_thumbs_up"
+            android:key="@string/preference_rate_us"
+            android:summary="If you loved the app. please leave a 5 star review:)"
+            android:title="Rate WonderScan" />
         <Preference
             android:icon="@drawable/ic_feedback"
             android:key="@string/preference_feedback"
             android:summary="@string/feedback_message"
-            android:title="Feedback" />
-
+            android:title="Write to us" />
     </PreferenceCategory>
 </PreferenceScreen>
