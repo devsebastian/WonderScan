@@ -18,21 +18,21 @@
 package com.devsebastian.wonderscan.utils
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.Application
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
-import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
+import android.util.Log
+import android.util.Pair
 import androidx.activity.result.ActivityResultLauncher
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.activity.CropActivity
+import com.devsebastian.wonderscan.dao.FrameDao
+import com.devsebastian.wonderscan.data.BoundingRect
+import com.devsebastian.wonderscan.data.Frame
 import org.opencv.android.Utils
-import org.opencv.core.Core
-import org.opencv.core.Mat
+import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
@@ -60,7 +60,6 @@ object Utils {
         if (!folder.exists()) folder.mkdir()
         return File(folder, filename)
     }
-
 
 
     fun rotateMat(mat: Mat, angle: Int) {
@@ -96,7 +95,11 @@ object Utils {
         activity.startActivityForResult(intent, code)
     }
 
-    fun sendCreateFileIntent(name: String, type: String?, resultLauncher: ActivityResultLauncher<Intent>) {
+    fun sendCreateFileIntent(
+        name: String,
+        type: String?,
+        resultLauncher: ActivityResultLauncher<Intent>
+    ) {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.type = type
@@ -104,10 +107,71 @@ object Utils {
         resultLauncher.launch(intent)
     }
 
-    fun removeImageFromCache(path: String?) {
-        path?.let {
-            val file = File(it)
-            if (file.exists()) file.delete()
+    fun cropAndFormat(frame: Frame, application: Application, frameDao: FrameDao) {
+        val originalMat = Imgcodecs.imread(frame.uri)
+        val ratio = getDeviceWidth() / originalMat.width().toDouble()
+        val bRect = findCorners(originalMat, ratio)
+        val croppedMat: Mat
+        if (bRect != null) {
+            croppedMat = CropActivity.getPerspectiveTransform(originalMat, bRect, ratio)
+        } else {
+            croppedMat = Mat()
+            originalMat.copyTo(croppedMat)
         }
+        val croppedPath = createPhotoFile(application).absolutePath
+        Imgcodecs.imwrite(croppedPath, croppedMat)
+        val editedMat = Filter.auto(croppedMat)
+        val editedPath = createPhotoFile(application).absolutePath
+        Imgcodecs.imwrite(editedPath, editedMat)
+
+        frame.croppedUri = croppedPath
+        frame.editedUri = editedPath
+        frameDao.update(frame)
+
+        originalMat.release()
+        croppedMat.release()
+        editedMat.release()
+    }
+
+    private fun findCorners(sourceMat: Mat, ratio: Double): BoundingRect? {
+        val mat = sourceMat.clone()
+        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.GaussianBlur(mat, mat, Size(5.0, 5.0), 0.0)
+        Imgproc.Canny(mat, mat, 75.0, 200.0)
+        val points: MutableList<MatOfPoint?> = ArrayList()
+        Imgproc.findContours(mat, points, Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
+        val areas: MutableList<Pair<MatOfPoint, Double>> = ArrayList()
+        for (point in points) {
+            areas.add(Pair(point, Imgproc.contourArea(point)))
+        }
+        areas.sortWith { t1: Pair<MatOfPoint, Double>, t2: Pair<MatOfPoint, Double> ->
+            java.lang.Double.compare(
+                t2.second,
+                t1.second
+            )
+        }
+        val maxArea = (mat.width() * (mat.height() / 8f)).toDouble()
+        if (areas.size == 0 || areas[0].second < maxArea) {
+            return null
+        }
+        for (area in areas) {
+            val matOfPoint2f = MatOfPoint2f(*area.first.toArray())
+            Imgproc.approxPolyDP(
+                matOfPoint2f,
+                matOfPoint2f,
+                0.02 * Imgproc.arcLength(matOfPoint2f, true),
+                true
+            )
+            if (matOfPoint2f.height() == 4) {
+                if (area.second > maxArea) {
+                    val bRect = BoundingRect()
+                    bRect.fromPoints(matOfPoint2f.toList(), ratio, ratio)
+                    mat.release()
+                    return bRect
+                }
+            }
+        }
+        mat.release()
+        return null
     }
 }

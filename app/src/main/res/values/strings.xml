@@ -33,7 +33,6 @@
     <!-- preferences -->
     <string name="preference_privacy_policy">preference_privacy_policy</string>
     <string name="preference_rate_us">preference_rate_us</string>
-    <string name="intent_frame_id">frameId</string>
     <string name="toast_error_message">Unexpected error: Oops something went wrong.</string>
     <string name="intent_path">intent_path</string>
     <string name="intent_native_mat_address">intent_native_mat_address</string>
@@ -51,6 +50,8 @@
     <string name="feedback_message">If you\'re not happy with the product or want to suggest changes, you can write to me directly at developer.devsebastian@gmail.com:)</string>
     <string name="gallery_message">Select the images and press proceed to automatically create a WonderScan document from the selected images.</string>
     <string name="preference_share">preference_share</string>
+    <string name="intent_frame_id">frameId</string>
+    <string name="search_any_document">Search any document</string>
 
     <string-array name="themes">
         <item>@string/dark_theme</item>

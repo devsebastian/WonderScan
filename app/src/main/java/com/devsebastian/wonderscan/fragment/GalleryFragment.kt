@@ -20,8 +20,10 @@ package com.devsebastian.wonderscan.fragment
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -75,6 +77,7 @@ open class GalleryFragment : Fragment() {
         recyclerView.adapter = adapter
         Thread {
             val uris = getAllImages()
+            Log.d("devdevdev", "$uris")
             adapter.setImagePaths(uris)
             activity?.runOnUiThread { adapter.notifyDataSetChanged() }
         }.start()

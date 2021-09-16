@@ -32,7 +32,7 @@ class MainActivityViewModel(
     frameDao: FrameDao?
 ) : MainViewModel(frameDao) {
     var docId: Long? = null
-    var documents: LiveData<MutableList<Document>>? = null
+    private var documents: LiveData<MutableList<Document>>? = null
 
     fun getAllDocuments(): LiveData<MutableList<Document>>? {
         if (documents == null) {
@@ -49,6 +49,7 @@ class MainActivityViewModelFactory(
     private val frameDao: FrameDao
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return MainActivityViewModel(documentDao, frameDao) as T
     }
 }

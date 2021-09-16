@@ -18,9 +18,8 @@
 package com.devsebastian.wonderscan.adapter
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.os.Vibrator
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,7 +40,10 @@ class ProgressFramesAdapter(
     var frames: List<Frame>
 ) : RecyclerView.Adapter<ProgressFramesAdapter.ViewHolder?>() {
 
+    var isSwapped = false
+
     fun swap(from: Int, to: Int) {
+        isSwapped = true
         Collections.swap(frames, from, to)
         notifyItemMoved(from, to)
     }
@@ -70,14 +72,17 @@ class ProgressFramesAdapter(
             holder.textView.text = frame.name
         }
         if (frame.editedUri == null) {
-            Glide.with(activity).load(frame.uri)
-                .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
+            Glide.with(activity)
+                .load(frame.uri)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(holder.imageView)
         } else {
-            Glide.with(activity).load(frame.editedUri)
-                .diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true)
+            Glide.with(activity)
+                .load(frame.editedUri)
                 .into(holder.imageView)
-            holder.progressBar.visibility = View.GONE
+            if (holder.progressBar.visibility == View.VISIBLE)
+                holder.progressBar.visibility = View.GONE
         }
     }
 
@@ -85,18 +90,17 @@ class ProgressFramesAdapter(
         return frames.size
     }
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ViewHolder(itemView: View) :
+        RecyclerView.ViewHolder(itemView) {
         var imageView: ImageView = itemView.findViewById(R.id.iv_frame)
         var textView: TextView = itemView.findViewById(R.id.tv_frame)
         var progressBar: View = itemView.findViewById(R.id.progress)
 
         init {
             itemView.setOnLongClickListener {
-                val v = itemView.context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                v.vibrate(50)
+                itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 false
             }
         }
     }
-
 }

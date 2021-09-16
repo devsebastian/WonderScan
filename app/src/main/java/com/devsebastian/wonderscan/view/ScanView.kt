@@ -23,6 +23,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatImageView
 import com.devsebastian.wonderscan.R
@@ -46,7 +47,6 @@ class ScanView(context: Context, attrs: AttributeSet?) : AppCompatImageView(cont
                 removeDelayedHandler()
             }
             dynamicBoundingRect = boundingRect
-            //            _setBoundingRect(boundingRect);
             invalidate()
         } else {
             if (delayedHandler == null) {
@@ -56,7 +56,7 @@ class ScanView(context: Context, attrs: AttributeSet?) : AppCompatImageView(cont
     }
 
     private fun startDelayedHandler() {
-        delayedHandler = Handler()
+        delayedHandler = Handler(Looper.getMainLooper())
         if (delayedRunnable == null) delayedRunnable = Runnable {
             dynamicBoundingRect = BoundingRect(-100.0)
             invalidate()

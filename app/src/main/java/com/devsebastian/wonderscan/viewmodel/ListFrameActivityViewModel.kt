@@ -32,6 +32,7 @@ import com.devsebastian.wonderscan.data.Frame
 import com.devsebastian.wonderscan.utils.ExportPdf
 import com.devsebastian.wonderscan.utils.Filter
 import com.devsebastian.wonderscan.utils.Utils
+import com.devsebastian.wonderscan.utils.Utils.cropAndFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.opencv.imgcodecs.Imgcodecs
@@ -54,26 +55,30 @@ class ListFrameActivityViewModel(
             for (i in frames.indices) {
                 if (frames[i].editedUri == null) {
                     val frame = frames[i]
-                    processFrame(application, frame)
+                    viewModelScope.launch(Dispatchers.Default) {
+                        if (frame.croppedUri == null)
+                            cropAndFormat(frame, application, frameDao)
+                        else processFrame(application, frame)
+                    }
                 }
             }
         }
     }
 
-    fun swap(from: Frame, to: Frame) {
-        val i = from.index
-        from.index = to.index
-        to.index = i
-        viewModelScope.launch(Dispatchers.IO) {
-            frameDao.update(from)
-            frameDao.update(to)
-        }
+    private fun processFrame(context: Context, frame: Frame) {
+        val file = Utils.createPhotoFile(context)
+        val mat = Imgcodecs.imread(frame.croppedUri)
+        val editedMat = Filter.magicColor(mat)
+        Imgcodecs.imwrite(file.absolutePath, editedMat)
+        frame.editedUri = file.absolutePath
+        frameDao.update(frame)
+        mat.release()
+        editedMat.release()
     }
 
     fun update(frames: List<Frame>) {
         viewModelScope.launch(Dispatchers.IO) {
-            for(i in frames.indices) {
-                frames[i].index = i
+            for (i in frames.indices) {
                 frameDao.update(frames[i])
             }
         }
@@ -124,18 +129,6 @@ class ListFrameActivityViewModel(
             }
         }
     }
-
-
-    private fun processFrame(context: Context, frame: Frame) {
-        val file = Utils.createPhotoFile(context)
-        val mat = Imgcodecs.imread(frame.croppedUri)
-        val editedMat = Filter.magicColor(mat)
-        Imgcodecs.imwrite(file.absolutePath, editedMat)
-        frame.editedUri = file.absolutePath
-        frameDao.update(frame)
-        mat.release()
-        editedMat.release()
-    }
 }
 
 class ListFrameActivityViewModelFactory(
@@ -145,6 +138,7 @@ class ListFrameActivityViewModelFactory(
     private val docId: String
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return ListFrameActivityViewModel(application, documentDao, frameDao, docId) as T
     }
 }

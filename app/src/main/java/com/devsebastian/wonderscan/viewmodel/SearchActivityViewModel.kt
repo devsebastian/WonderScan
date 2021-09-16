@@ -18,14 +18,11 @@
 
 package com.devsebastian.wonderscan.viewmodel
 
-import android.util.Pair
 import androidx.lifecycle.*
 import com.devsebastian.wonderscan.dao.DocumentDao
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.Document
-import com.devsebastian.wonderscan.data.Frame
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class SearchActivityViewModel(
@@ -33,18 +30,22 @@ class SearchActivityViewModel(
     frameDao: FrameDao,
 ) : MainViewModel(frameDao) {
 
-    var documents: LiveData<MutableList<Document>> = MutableLiveData()
+    var documents: MutableLiveData<MutableList<Document>> = MutableLiveData()
 
     fun search(query: String) {
         viewModelScope.launch(Dispatchers.Main) {
-            documents = documentDao.search("%$query$")
+            documents.postValue(documentDao.search("%$query%"))
         }
     }
 
 }
 
-class SearchActivityViewModelFactory(private val documentDao: DocumentDao, private val frameDao: FrameDao): ViewModelProvider.Factory {
+class SearchActivityViewModelFactory(
+    private val documentDao: DocumentDao,
+    private val frameDao: FrameDao
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return SearchActivityViewModel(documentDao, frameDao) as T
     }
 }

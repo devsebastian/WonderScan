@@ -28,7 +28,7 @@ import com.devsebastian.wonderscan.data.Document
 import com.devsebastian.wonderscan.data.Frame
 
 
-@Database(entities = [Document::class, Frame::class], version = 1)
+@Database(entities = [Document::class, Frame::class], version = 1, exportSchema = false)
 abstract class MyDatabase : RoomDatabase() {
     abstract fun frameDao(): FrameDao
     abstract fun documentDao(): DocumentDao

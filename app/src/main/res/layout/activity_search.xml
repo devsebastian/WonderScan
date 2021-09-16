@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2021 Dev Sebastian
   ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
   ~
@@ -35,9 +34,12 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@null"
+            android:hint="@string/search_any_document"
+            android:inputType="text"
             android:maxLines="1"
-            android:hint="Search any document"
-            android:paddingHorizontal="12dp" />
+            android:minLines="1"
+            android:paddingHorizontal="12dp"
+            android:singleLine="true" />
     </androidx.appcompat.widget.Toolbar>
 
 

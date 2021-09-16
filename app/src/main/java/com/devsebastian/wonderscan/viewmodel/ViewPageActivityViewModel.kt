@@ -18,38 +18,47 @@
 
 package com.devsebastian.wonderscan.viewmodel
 
-import android.util.Pair
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.devsebastian.wonderscan.dao.DocumentDao
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.Document
 import com.devsebastian.wonderscan.data.Frame
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ViewPageActivityViewModel(
-    private val documentDao: DocumentDao,
+    documentDao: DocumentDao,
     private val frameDao: FrameDao,
-    private val docId: String
+    docId: String
 ) : ViewModel() {
 
     val document: LiveData<Document> = documentDao.getDocument(docId)
     val frames: LiveData<MutableList<Frame>> = frameDao.getFrames(docId)
+    var currentIndex = 0
 
     fun updateFrame(frame: Frame) {
-        frameDao.update(frame)
+        viewModelScope.launch(Dispatchers.IO) {
+            frameDao.update(frame)
+        }
     }
 
     fun deleteFrame(frame: Frame) {
-        frameDao.delete(frame)
+        viewModelScope.launch(Dispatchers.IO) {
+            frameDao.delete(frame)
+        }
     }
-
-
 }
 
-class ViewPageActivityViewModelFactory(private val documentDao: DocumentDao, private val frameDao: FrameDao, private val docId: String): ViewModelProvider.Factory {
+class ViewPageActivityViewModelFactory(
+    private val documentDao: DocumentDao,
+    private val frameDao: FrameDao,
+    private val docId: String
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return ViewPageActivityViewModel(documentDao, frameDao, docId) as T
     }
 }

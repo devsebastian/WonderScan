@@ -17,14 +17,17 @@
  */
 package com.devsebastian.wonderscan.activity
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -36,6 +39,7 @@ import com.devsebastian.wonderscan.MyApplication
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.utils.DetectBox
 import com.devsebastian.wonderscan.utils.Utils
+import com.devsebastian.wonderscan.utils.YuvToRgbConverter
 import com.devsebastian.wonderscan.view.ScanView
 import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModelFactory
@@ -63,17 +67,14 @@ class ScanActivity : BaseActivity() {
     @ExperimentalGetImage
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
-        )
+        setContentView(R.layout.activity_scan)
+
         (application as MyApplication).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
                 ScanActivityViewModelFactory(db.documentDao(), db.frameDao())
             ).get(ScanActivityViewModel::class.java)
         }
-        setContentView(R.layout.activity_scan)
         captureProgress = findViewById(R.id.pb_scan)
         finalImage = findViewById(R.id.iv_recent_capture)
         val frameLayout = findViewById<FrameLayout?>(R.id.camera_frame)
@@ -93,13 +94,7 @@ class ScanActivity : BaseActivity() {
         finalImage.setOnClickListener {
             val simpleDateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
             val name = getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
-            val job = viewModel.capture(name, angle, count)
-            job.invokeOnCompletion {
-                val i = Intent(this@ScanActivity, ListFramesActivity::class.java)
-                i.putExtra(getString(R.string.intent_document_id), viewModel.docId)
-                startActivity(i)
-                finish()
-            }
+            viewModel.capture(name, angle, count, this)
         }
         if (allPermissionsGranted()) {
             startCamera()
@@ -148,18 +143,6 @@ class ScanActivity : BaseActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == CROP_ACTIVITY && resultCode == RESULT_OK && data != null) {
-            val croppedPath = data.getStringExtra(getString(R.string.intent_cropped_path))
-            val sourcePath = data.getStringExtra(getString(R.string.intent_source_path))
-            viewModel.addPath(sourcePath!!, croppedPath!!)
-            finalImage.setImageBitmap(BitmapFactory.decodeFile(croppedPath))
-            if (pageCount.visibility != View.VISIBLE) pageCount.visibility = View.VISIBLE
-            pageCount.text = viewModel.pathsCount().toString()
-        }
-        super.onActivityResult(requestCode, resultCode, data)
-    }
-
     @ExperimentalGetImage
     fun bindPreview(cameraProvider: ProcessCameraProvider) {
         val preview = Preview.Builder()
@@ -175,12 +158,15 @@ class ScanActivity : BaseActivity() {
         preview.setSurfaceProvider(viewFinder.surfaceProvider)
         cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis)
         val captureImageBtn = findViewById<View?>(R.id.btn_capture)
+        val converter = YuvToRgbConverter(this)
         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), { imageProxy: ImageProxy ->
             angle = imageProxy.imageInfo.rotationDegrees
             val image = imageProxy.image
             if (image != null && image.format == ImageFormat.YUV_420_888) {
                 lifecycleScope.launch(Dispatchers.Default) {
-                    val boundingRect = DetectBox.findCorners(imageProxy, angle)
+                    val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                    converter.yuvToRgb(image, bmp)
+                    val boundingRect = DetectBox.findCorners(bmp, angle)
                     imageProxy.close()
                     runOnUiThread {
                         scanView.setBoundingRect(boundingRect)
@@ -202,7 +188,7 @@ class ScanActivity : BaseActivity() {
                         val intent = Intent(this@ScanActivity, CropActivity::class.java)
                         intent.putExtra(getString(R.string.intent_source_path), file.absolutePath)
                         intent.putExtra(getString(R.string.intent_angle), angle)
-                        startActivityForResult(intent, CROP_ACTIVITY)
+                        resultLauncher.launch(intent)
                         captureProgress.visibility = View.GONE
                     }
 
@@ -213,8 +199,21 @@ class ScanActivity : BaseActivity() {
         }
     }
 
+    private var resultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.let {
+                    val croppedPath = it.getStringExtra(getString(R.string.intent_cropped_path))
+                    val sourcePath = it.getStringExtra(getString(R.string.intent_source_path))
+                    viewModel.addPath(sourcePath!!, croppedPath!!)
+                    finalImage.setImageBitmap(BitmapFactory.decodeFile(croppedPath))
+                    if (pageCount.visibility != View.VISIBLE) pageCount.visibility = View.VISIBLE
+                    pageCount.text = viewModel.pathsCount().toString()
+                }
+            }
+        }
+
     companion object {
         val TAG: String = ScanActivity::class.java.simpleName
-        private const val CROP_ACTIVITY = 101
     }
 }

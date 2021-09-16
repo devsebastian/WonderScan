@@ -49,5 +49,5 @@ interface DocumentDao {
     fun getAllDocuments(): LiveData<MutableList<Document>>
 
     @Query("SELECT * FROM Document WHERE name LIKE :query ORDER BY dateTime DESC")
-    fun search(query: String): LiveData<MutableList<Document>>
+    suspend fun search(query: String): MutableList<Document>
 }

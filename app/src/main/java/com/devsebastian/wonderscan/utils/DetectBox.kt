@@ -17,12 +17,14 @@
  */
 package com.devsebastian.wonderscan.utils
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.util.Pair
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
-import com.devsebastian.wonderscan.utils.Utils.getDeviceWidth
 import com.devsebastian.wonderscan.data.BoundingRect
+import com.devsebastian.wonderscan.utils.Utils.getDeviceWidth
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
@@ -32,19 +34,6 @@ class DetectBox {
 
     companion object {
         private const val MAX_WIDTH = 500.0
-
-        fun findCorners(
-            image: ImageProxy,
-            angle: Int
-        ): BoundingRect? {
-            val sourceMat = yuvToRgba(image, angle)
-            val bmp =
-                Bitmap.createBitmap(sourceMat.width(), sourceMat.height(), Bitmap.Config.ARGB_8888)
-            Utils.matToBitmap(sourceMat, bmp)
-            val ratio =
-                (getDeviceWidth() / sourceMat.width().toFloat()).toDouble()
-            return detect(sourceMat, ratio)
-        }
 
         fun findCorners(
             image: Bitmap,

@@ -17,12 +17,12 @@
  */
 package com.devsebastian.wonderscan.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.CASCADE
 import androidx.room.PrimaryKey
 import java.io.Serializable
-import java.util.*
 
 @Entity(
     foreignKeys = [ForeignKey(
@@ -35,6 +35,7 @@ import java.util.*
 class Frame(
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0,
+    @ColumnInfo(index = true)
     var docId: String,
     var index: Int,
     var timeInMillis: Long,

@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.activity.BaseActivity
 import com.devsebastian.wonderscan.activity.ListFramesActivity
 import com.devsebastian.wonderscan.activity.MainActivity
 import com.devsebastian.wonderscan.data.Document
@@ -75,7 +76,7 @@ class DocumentsAdapter(
             val h = holder as NormalViewHolder
             h.title.text = document.name
             h.subtitle.text = simpleDateFormat.format(Date(document.dateTime))
-            viewModel.getPageCount(document.id).observe(activity as MainActivity) { count ->
+            viewModel.getPageCount(document.id).observe(activity as BaseActivity) { count ->
                 h.sheetNumber.text = String.format(
                     Locale.getDefault(),
                     "%d pages", count

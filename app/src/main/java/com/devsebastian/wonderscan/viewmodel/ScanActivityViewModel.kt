@@ -18,14 +18,17 @@
 
 package com.devsebastian.wonderscan.viewmodel
 
+import android.app.Activity
+import android.content.Intent
 import android.util.Pair
 import androidx.lifecycle.*
+import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.activity.ListFramesActivity
 import com.devsebastian.wonderscan.dao.DocumentDao
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.Document
 import com.devsebastian.wonderscan.data.Frame
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ScanActivityViewModel(
@@ -55,36 +58,43 @@ class ScanActivityViewModel(
         return count
     }
 
-    fun capture(name: String, angle: Int, count: Int): Job {
-        val job = Job()
-        viewModelScope.launch(Dispatchers.Default + job) {
+    fun capture(name: String, angle: Int, count: Int, activity: Activity) {
+        viewModelScope.launch(Dispatchers.Default) {
             if (newDocument) {
                 val doc = Document()
                 docId = doc.id
                 doc.name = name
                 doc.dateTime = System.currentTimeMillis()
                 documentDao?.insert(doc)
-                job.complete()
             }
             for (i in paths.indices) {
                 val path = paths[i]
                 val frame = Frame(
                     timeInMillis = System.currentTimeMillis(),
-                    index =  count+i,
-                    angle =  angle,
+                    index = count + i,
+                    angle = angle,
                     docId = docId!!,
                     uri = path.first,
                     croppedUri = path.second
                 )
                 frameDao?.insert(frame)
             }
+            if (!activity.isDestroyed) {
+                val i = Intent(activity, ListFramesActivity::class.java)
+                i.putExtra(activity.getString(R.string.intent_document_id), docId)
+                activity.startActivity(i)
+                activity.finish()
+            }
         }
-        return job
     }
 }
 
-class ScanActivityViewModelFactory(private val documentDao: DocumentDao?, private val frameDao: FrameDao?): ViewModelProvider.Factory {
+class ScanActivityViewModelFactory(
+    private val documentDao: DocumentDao?,
+    private val frameDao: FrameDao?
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
         return ScanActivityViewModel(documentDao, frameDao) as T
     }
 }

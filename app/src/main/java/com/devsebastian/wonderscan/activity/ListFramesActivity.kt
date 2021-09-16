@@ -17,11 +17,12 @@
  */
 package com.devsebastian.wonderscan.activity
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
-import android.graphics.pdf.PdfDocument
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -40,11 +41,9 @@ import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 
 class ListFramesActivity : BaseActivity() {
-    private var pdfDocument: PdfDocument? = null
     private lateinit var framesAdapter: ProgressFramesAdapter
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -123,6 +122,12 @@ class ListFramesActivity : BaseActivity() {
     lateinit var viewModel: ListFrameActivityViewModel
     var docId: String? = null
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.processUnprocessedFrames(docId!!)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         title = ""
@@ -164,16 +169,15 @@ class ListFramesActivity : BaseActivity() {
             var datasetChanged = true
             if (framesAdapter.frames.size == frames.size) datasetChanged = false
             framesAdapter.frames = frames
-//            if (datasetChanged)
+            if (datasetChanged)
                 framesAdapter.notifyDataSetChanged()
-//            else
-//                for(i in frames.indices) {
-//                    framesAdapter.notifyItemChanged(i)
-//                }
+            else
+                for (i in frames.indices) {
+                    framesAdapter.notifyItemChanged(i)
+                }
         }
 
         val itemTouchHelper = ItemTouchHelper(getItemTouchHelperCallback())
-        viewModel.processUnprocessedFrames(docId!!)
         val fab = findViewById<View?>(R.id.fab)
         val recyclerView = findViewById<RecyclerView?>(R.id.rv_frames)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
@@ -190,7 +194,10 @@ class ListFramesActivity : BaseActivity() {
         recyclerView.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_UP -> {
-                    viewModel.update(framesAdapter.frames)
+                    if (framesAdapter.isSwapped) {
+                        framesAdapter.isSwapped = false
+                        viewModel.update(framesAdapter.frames)
+                    }
                 }
             }
             false
@@ -231,26 +238,7 @@ class ListFramesActivity : BaseActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == SAVE_PDF_INTENT_CODE && resultCode == RESULT_OK && data != null) {
-            data.data?.let { uri ->
-                try {
-                    pdfDocument?.writeTo(contentResolver.openOutputStream(uri))
-                    Toast.makeText(this, "PDF document saved in " + uri.path, Toast.LENGTH_SHORT)
-                        .show()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }
-        } else if (requestCode == VIEW_PAGE_ACTIVITY) {
-            viewModel.processUnprocessedFrames(docId!!)
-        }
-    }
-
-
     companion object {
         const val VIEW_PAGE_ACTIVITY = 101
-        const val SAVE_PDF_INTENT_CODE = 102
     }
 }

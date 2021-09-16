@@ -36,7 +36,7 @@ import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.LoaderCallbackInterface
 import org.opencv.android.OpenCVLoader
 
-open class MainActivity : BaseActivity() {
+class MainActivity : BaseActivity() {
     private val mLoaderCallback: BaseLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
             if (status == SUCCESS) {
@@ -86,7 +86,7 @@ open class MainActivity : BaseActivity() {
         supportFragmentManager.beginTransaction().replace(R.id.fragment_holder, mainFragment)
             .commitNow()
         bottomNavigationView = findViewById(R.id.bottom_navigation_view)
-        bottomNavigationView.setOnNavigationItemSelectedListener { item: MenuItem ->
+        bottomNavigationView.setOnItemSelectedListener { item: MenuItem ->
             val transaction = supportFragmentManager.beginTransaction()
             when (item.itemId) {
                 R.id.menu_home -> {

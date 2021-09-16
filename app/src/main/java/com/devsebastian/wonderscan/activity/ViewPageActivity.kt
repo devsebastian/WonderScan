@@ -32,6 +32,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
+import androidx.viewpager.widget.ViewPager
 import com.devsebastian.wonderscan.MyApplication
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.adapter.ViewFrameAdapter
@@ -40,12 +41,14 @@ import com.devsebastian.wonderscan.view.CustomViewPager
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModelFactory
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationBarView
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
-class ViewPageActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
+class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListener,
+    ViewPager.OnPageChangeListener {
     private var docId: String? = null
     private lateinit var viewPager: CustomViewPager
     private lateinit var viewFrameAdapter: ViewFrameAdapter
@@ -79,16 +82,19 @@ class ViewPageActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSe
         viewPager = findViewById(R.id.view_pager)
         viewFrameAdapter = ViewFrameAdapter(this, ArrayList())
         viewPager.adapter = viewFrameAdapter
-        viewPager.currentItem = intent.getIntExtra(
+        viewModel.currentIndex = intent.getIntExtra(
             getString(R.string.intent_frame_position),
             0
         )
         val bottomNavigationView = findViewById<BottomNavigationView?>(R.id.bottom_navigation_view)
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
+        bottomNavigationView.setOnItemSelectedListener(this)
+
+        viewPager.addOnPageChangeListener(this)
 
         viewModel.frames.observe(this) { frames ->
             viewFrameAdapter.setFrames(frames)
             viewFrameAdapter.notifyDataSetChanged()
+            viewPager.currentItem = viewModel.currentIndex
         }
     }
 
@@ -129,7 +135,7 @@ class ViewPageActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSe
                     getString(R.string.intent_angle),
                     viewFrameAdapter.get(viewPager.currentItem).angle
                 )
-                startActivity(cropIntent)
+                cropResultLauncher.launch(cropIntent)
             }
             R.id.menu_ocr -> {
                 Toast.makeText(this, "Detecting Text. Please wait", Toast.LENGTH_SHORT).show()
@@ -155,6 +161,14 @@ class ViewPageActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSe
             }
         }
         return false
+    }
+
+    var cropResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if(result.resultCode == RESULT_OK) {
+            val frame = viewFrameAdapter.get(viewPager.currentItem)
+            frame.editedUri = null
+            viewModel.updateFrame(frame)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -231,5 +245,17 @@ class ViewPageActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSe
             alertDialog.dismiss()
         }
         cancelBtn.setOnClickListener { alertDialog.dismiss() }
+    }
+
+    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+        // required
+    }
+
+    override fun onPageSelected(position: Int) {
+        viewModel.currentIndex = position
+    }
+
+    override fun onPageScrollStateChanged(state: Int) {
+        // required
     }
 }

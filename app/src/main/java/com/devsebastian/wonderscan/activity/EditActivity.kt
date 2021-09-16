@@ -20,13 +20,14 @@ package com.devsebastian.wonderscan.activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.os.Handler
 import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.lifecycle.ViewModelProvider
-import com.devsebastian.wonderscan.*
+import androidx.lifecycle.lifecycleScope
+import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.data.Frame
 import com.devsebastian.wonderscan.utils.BrightnessAndContrastController
 import com.devsebastian.wonderscan.utils.Filter
@@ -34,7 +35,10 @@ import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.viewmodel.EditActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.EditActivityViewModelFactory
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationBarView
 import com.jsibbold.zoomage.ZoomageView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Size
@@ -43,10 +47,8 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelectedListener,
-    View.OnClickListener, OnSeekBarChangeListener {
-    private var processImageHandler: Handler? = null
-    private var processImageRunnable: Runnable? = null
+class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeListener,
+    NavigationBarView.OnItemSelectedListener {
     private lateinit var croppedMat: Mat
     private lateinit var editedMat: Mat
     private lateinit var mainImageView: ZoomageView
@@ -86,17 +88,11 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
 
     private fun filterImage(processImage: ProcessImage) {
         findViewById<View?>(R.id.pb_edit).visibility = View.VISIBLE
-        if (processImageHandler != null && processImageRunnable != null) {
-            processImageHandler!!.removeCallbacks(processImageRunnable!!)
-            processImageHandler = null
-        }
-        processImageHandler = Handler()
-        processImageRunnable = Runnable {
+        lifecycleScope.launch(Dispatchers.Default) {
             editedMat = processImage.process(croppedMat)
             previewMat(editedMat)
             runOnUiThread { findViewById<View?>(R.id.pb_edit).visibility = View.GONE }
         }
-        processImageHandler!!.post(processImageRunnable!!)
     }
 
     private fun setupFilterButtons() {
@@ -158,18 +154,22 @@ class EditActivity : BaseActivity(), BottomNavigationView.OnNavigationItemSelect
         modifyToolsLayout.visibility = View.GONE
 
         (application as MyApplication).database?.let { db ->
-            viewModel = ViewModelProvider(this, EditActivityViewModelFactory(application as MyApplication, db.frameDao())).get(
-                EditActivityViewModel::class.java)
+            viewModel = ViewModelProvider(
+                this,
+                EditActivityViewModelFactory(application as MyApplication, db.frameDao())
+            ).get(
+                EditActivityViewModel::class.java
+            )
             viewModel.getFrame(frameId)
         }
 
-        viewModel.frame?.observe(this) {frame ->
+        viewModel.frame?.observe(this) { frame ->
             this.frame = frame
             setupPreview()
             setupFilterButtons()
             setupBrightnessAndContrast()
         }
-        bottomNavigationView.setOnNavigationItemSelectedListener(this)
+        bottomNavigationView.setOnItemSelectedListener(this)
         findViewById<View?>(R.id.iv_black_and_white).setOnClickListener(this)
         findViewById<View?>(R.id.iv_auto).setOnClickListener(this)
         findViewById<View?>(R.id.iv_grayscale).setOnClickListener(this)
