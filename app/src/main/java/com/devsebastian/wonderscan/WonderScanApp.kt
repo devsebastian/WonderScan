@@ -21,6 +21,6 @@ package com.devsebastian.wonderscan
 import android.app.Application
 import com.devsebastian.wonderscan.utils.MyDatabase
 
-class MyApplication : Application() {
+class WonderScanApp : Application() {
     val database by lazy { MyDatabase.geDatabase(this) }
 }

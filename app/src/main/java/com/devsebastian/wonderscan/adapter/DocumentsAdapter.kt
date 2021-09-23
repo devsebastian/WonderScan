@@ -19,9 +19,7 @@ package com.devsebastian.wonderscan.adapter
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,10 +31,8 @@ import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.activity.BaseActivity
 import com.devsebastian.wonderscan.activity.ListFramesActivity
-import com.devsebastian.wonderscan.activity.MainActivity
 import com.devsebastian.wonderscan.data.Document
 import com.devsebastian.wonderscan.utils.Utils
-import com.devsebastian.wonderscan.viewmodel.MainActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -53,43 +49,40 @@ class DocumentsAdapter(
 
     @SuppressLint("NotifyDataSetChanged")
     fun updateDocuments(documents: MutableList<Document>) {
-        data = documents
-        data.add(Document())
+        data = documents.apply { add(Document()) }
         notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        val listItem: View
         return if (viewType == TYPE_NORMAL) {
-            listItem = layoutInflater.inflate(R.layout.row_document, parent, false)
-            NormalViewHolder(listItem)
+            NormalViewHolder(layoutInflater.inflate(R.layout.row_document, parent, false))
         } else {
-            listItem = layoutInflater.inflate(R.layout.row_documents_footer, parent, false)
-            FooterViewHolder(listItem)
+            FooterViewHolder(layoutInflater.inflate(R.layout.row_documents_footer, parent, false))
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (position < data.size) {
             val document = data[position]
-            val h = holder as NormalViewHolder
-            h.title.text = document.name
-            h.subtitle.text = simpleDateFormat.format(Date(document.dateTime))
-            viewModel.getPageCount(document.id).observe(activity as BaseActivity) { count ->
-                h.sheetNumber.text = String.format(
-                    Locale.getDefault(),
-                    "%d pages", count
-                )
-            }
-            holder.itemView.setOnClickListener {
-                val intent = Intent(activity, ListFramesActivity::class.java)
-                intent.putExtra(activity.getString(R.string.intent_document_id), document.id)
-                activity.startActivity(intent)
-            }
-            viewModel.getFirstFrameImagePath(document.id)?.observe(activity) { uri ->
-                Glide.with(activity).load(uri)
-                    .downsample(DownsampleStrategy.AT_MOST).into(h.imageView)
+            (holder as NormalViewHolder).apply {
+                title.text = document.name
+                subtitle.text = simpleDateFormat.format(Date(document.dateTime))
+                viewModel.getPageCount(document.id).observe(activity as BaseActivity) { count ->
+                    sheetNumber.text = String.format(
+                        Locale.getDefault(),
+                        "%d pages", count
+                    )
+                }
+                itemView.setOnClickListener {
+                    val intent = Intent(activity, ListFramesActivity::class.java)
+                    intent.putExtra(activity.getString(R.string.intent_document_id), document.id)
+                    activity.startActivity(intent)
+                }
+                viewModel.getFirstFrameImagePath(document.id)?.observe(activity) { uri ->
+                    Glide.with(activity).load(uri).downsample(DownsampleStrategy.AT_MOST)
+                        .into(imageView)
+                }
             }
         } else {
             holder.itemView.setOnClickListener { Utils.shareAppLink(activity) }

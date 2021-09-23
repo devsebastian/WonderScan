@@ -20,14 +20,22 @@ package com.devsebastian.wonderscan.utils
 import org.opencv.core.Mat
 
 class BrightnessAndContrastController(var brightness: Double, var contrast: Double) {
+    var mat: Mat? = null
+
     fun setBrightness(sourceMat: Mat, value: Double): Mat {
         brightness = value
-        return process(sourceMat)
+        process(sourceMat).let {
+            mat = it
+            return it
+        }
     }
 
     fun setContrast(sourceMat: Mat, value: Double): Mat {
         contrast = value
-        return process(sourceMat)
+        process(sourceMat).let {
+            mat = it
+            return it
+        }
     }
 
     private fun process(sourceMat: Mat): Mat {

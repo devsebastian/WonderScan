@@ -32,32 +32,24 @@ import com.devsebastian.wonderscan.utils.Utils
 
 open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChangeListener,
     Preference.OnPreferenceChangeListener {
-    private lateinit var preferences: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.preferences)
-        preferences = preferenceManager.sharedPreferences
-        val privacyPolicyPreference =
-            findPreference<Preference?>(getString(R.string.preference_privacy_policy))
-        val rateUsPreference = findPreference<Preference?>(getString(R.string.preference_rate_us))
-        val developerPreference = findPreference<Preference?>(getString(R.string.key_developer))
-        val feedbackPreference =
-            findPreference<Preference?>(getString(R.string.preference_feedback))
-        val sharePreference =
-            findPreference<Preference?>(getString(R.string.preference_share))
 
-
-        sharePreference?.onPreferenceClickListener =
+        findPreference<Preference?>(getString(R.string.preference_share))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 Utils.shareAppLink(requireContext())
                 false
             }
-        feedbackPreference?.onPreferenceClickListener =
+
+        findPreference<Preference?>(getString(R.string.preference_feedback))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 sendFeedback()
                 false
             }
-        privacyPolicyPreference?.onPreferenceClickListener =
+
+        findPreference<Preference?>(getString(R.string.preference_privacy_policy))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -66,7 +58,8 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
                 startActivity(intent)
                 false
             }
-        rateUsPreference?.onPreferenceClickListener =
+
+        findPreference<Preference?>(getString(R.string.preference_rate_us))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -75,7 +68,8 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
                 startActivity(intent)
                 false
             }
-        developerPreference?.onPreferenceClickListener =
+
+        findPreference<Preference?>(getString(R.string.key_developer))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://devsebastian.me/"))
                 startActivity(intent)

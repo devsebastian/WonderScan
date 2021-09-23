@@ -22,7 +22,6 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -85,25 +84,26 @@ class ListFramesActivity : BaseActivity() {
     private fun showRenameDialog() {
         lifecycleScope.launch(Dispatchers.Main) {
             val document: Document = viewModel.getDocument()
-            val builder = AlertDialog.Builder(this@ListFramesActivity)
-            builder.setTitle("Rename")
-            val frameLayout = FrameLayout(application)
-            val editText = EditText(application)
-            val layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams.setMargins(50, 12, 50, 12)
-            editText.layoutParams = layoutParams
-            editText.setText(document.name)
-            frameLayout.addView(editText)
-            builder.setView(frameLayout)
-            builder.setNegativeButton("Cancel", null)
-            builder.setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-                document.name = editText.text.toString()
-                viewModel.updateDocument(document)
+            AlertDialog.Builder(this@ListFramesActivity).apply {
+                setTitle("Rename")
+                val frameLayout = FrameLayout(application)
+                val editText = EditText(application)
+                val layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                layoutParams.setMargins(50, 12, 50, 12)
+                editText.layoutParams = layoutParams
+                editText.setText(document.name)
+                frameLayout.addView(editText)
+                setView(frameLayout)
+                setNegativeButton("Cancel", null)
+                setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                    document.name = editText.text.toString()
+                    viewModel.updateDocument(document)
+                }
+                create().show()
             }
-            builder.create().show()
         }
     }
 
@@ -147,11 +147,11 @@ class ListFramesActivity : BaseActivity() {
 
         framesAdapter = ProgressFramesAdapter(this, docId!!, ArrayList())
 
-        (application as MyApplication).database?.let { db ->
+        (application as WonderScanApp).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
                 ListFrameActivityViewModelFactory(
-                    application as MyApplication,
+                    application as WonderScanApp,
                     db.documentDao(),
                     db.frameDao(),
                     docId!!

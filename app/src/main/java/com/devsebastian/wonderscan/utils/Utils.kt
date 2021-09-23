@@ -17,13 +17,10 @@
  */
 package com.devsebastian.wonderscan.utils
 
-import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.util.Log
 import android.util.Pair
 import androidx.activity.result.ActivityResultLauncher
 import com.devsebastian.wonderscan.R
@@ -31,7 +28,6 @@ import com.devsebastian.wonderscan.activity.CropActivity
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.BoundingRect
 import com.devsebastian.wonderscan.data.Frame
-import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
@@ -70,14 +66,15 @@ object Utils {
         }
     }
 
-    fun getBitmapFromMat(mat: Mat): Bitmap? {
-        val bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(mat, bitmap)
-        return bitmap
-    }
-
     fun saveMat(mat: Mat?, path: String?) {
-        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB)
+        when (mat?.channels()) {
+            2 -> {
+                Imgproc.cvtColor(mat, mat, Imgproc.COLOR_GRAY2RGB)
+            }
+            3 -> {
+                Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB)
+            }
+        }
         Imgcodecs.imwrite(path, mat)
     }
 
@@ -87,24 +84,17 @@ object Utils {
         return mat
     }
 
-    fun sendCreateFileIntent(activity: Activity, name: String, type: String?, code: Int) {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-        intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.type = type
-        intent.putExtra(Intent.EXTRA_TITLE, name)
-        activity.startActivityForResult(intent, code)
-    }
-
     fun sendCreateFileIntent(
         name: String,
         type: String?,
         resultLauncher: ActivityResultLauncher<Intent>
     ) {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-        intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.type = type
-        intent.putExtra(Intent.EXTRA_TITLE, name)
-        resultLauncher.launch(intent)
+        Intent(Intent.ACTION_CREATE_DOCUMENT).let {
+            it.addCategory(Intent.CATEGORY_OPENABLE)
+            it.type = type
+            it.putExtra(Intent.EXTRA_TITLE, name)
+            resultLauncher.launch(it)
+        }
     }
 
     fun cropAndFormat(frame: Frame, application: Application, frameDao: FrameDao) {

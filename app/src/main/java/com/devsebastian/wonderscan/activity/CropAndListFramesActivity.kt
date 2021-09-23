@@ -20,30 +20,31 @@ package com.devsebastian.wonderscan.activity
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.adapter.ProgressFramesAdapter
+import com.devsebastian.wonderscan.databinding.ActivityListFramesBinding
 import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.viewmodel.CropAndListFramesActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.CropAndListFramesActivityViewModelFactory
 
 class CropAndListFramesActivity : BaseActivity() {
-    private lateinit var framesAdapter: ProgressFramesAdapter
     private var sourcePaths: MutableList<String> = ArrayList()
+
+    private lateinit var framesAdapter: ProgressFramesAdapter
+    private lateinit var viewModel: CropAndListFramesActivityViewModel
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_list_frames, menu)
         return super.onCreateOptionsMenu(menu)
     }
 
-    lateinit var viewModel: CropAndListFramesActivityViewModel
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_export_pdf -> {
@@ -78,43 +79,45 @@ class CropAndListFramesActivity : BaseActivity() {
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
+        val binding = ActivityListFramesBinding.inflate(layoutInflater)
         super.onCreate(savedInstanceState)
+        setContentView(binding.root)
         title = ""
-        setContentView(R.layout.activity_list_frames)
         setSupportActionBar(findViewById(R.id.toolbar))
         if (supportActionBar != null) {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.setHomeButtonEnabled(true)
         }
-        val recyclerView = findViewById<RecyclerView?>(R.id.rv_frames)
-        val intent = intent
-        if (intent != null) {
-            sourcePaths =
-                intent.getStringArrayListExtra(getString(R.string.intent_uris)) ?: ArrayList()
-        }
-        val fab = findViewById<View?>(R.id.fab)
-        fab.visibility = View.GONE
-        recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.setHasFixedSize(true)
+        sourcePaths = intent.getStringArrayListExtra(getString(R.string.intent_uris)) ?: ArrayList()
+        binding.fab.visibility = View.GONE
 
-        (application as MyApplication).database?.let { db ->
+        framesAdapter = ProgressFramesAdapter(this, viewModel.document.id, ArrayList())
+        binding.rvFrames.let {
+            it.layoutManager = GridLayoutManager(this, 2)
+            it.setHasFixedSize(true)
+            it.adapter = framesAdapter
+        }
+
+        initialiseViewModel()
+        viewModel.let {
+            it.setup(sourcePaths)
+            it.frames.observe(this) { frames ->
+                framesAdapter.frames = frames
+                framesAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private fun initialiseViewModel() {
+        (application as WonderScanApp).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
                 CropAndListFramesActivityViewModelFactory(
-                    application as MyApplication,
+                    application as WonderScanApp,
                     db.documentDao(),
                     db.frameDao()
                 )
             ).get(CropAndListFramesActivityViewModel::class.java)
         }
-
-        viewModel.setup(sourcePaths)
-        framesAdapter = ProgressFramesAdapter(this, viewModel.document.id, ArrayList())
-        recyclerView.adapter = framesAdapter
-        viewModel.frames.observe(this) { frames ->
-            framesAdapter.frames = frames
-            framesAdapter.notifyDataSetChanged()
-        }
-
     }
 }

@@ -18,49 +18,26 @@
 
 package com.devsebastian.wonderscan.viewmodel
 
-import android.graphics.Bitmap
 import androidx.lifecycle.*
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.BoundingRect
-import com.devsebastian.wonderscan.data.Document
 import com.devsebastian.wonderscan.data.Frame
-import com.devsebastian.wonderscan.utils.DetectBox
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.opencv.core.Point
 
 
 class CropActivityViewModel(
-    application: MyApplication,
+    application: WonderScanApp,
     frameDao: FrameDao,
     frameId: Long
 ) : AndroidViewModel(application) {
     var frame: LiveData<Frame> = frameDao.getFrame(frameId)
     private var boundingRect: MutableLiveData<BoundingRect> = MutableLiveData()
 
-    fun getBoundingRect(bitmap: Bitmap, ratio: Double): LiveData<BoundingRect> {
-        viewModelScope.launch(Dispatchers.Default) {
-            var boundingRect = DetectBox.findCorners(bitmap, 0)
-            if (boundingRect == null) {
-                val width = bitmap.width
-                val height = bitmap.height
-                val padding = width * 0.1
-                boundingRect = BoundingRect()
-                boundingRect.topLeft = Point(padding * ratio, padding * ratio)
-                boundingRect.topRight = Point((width - padding) * ratio, padding * ratio)
-                boundingRect.bottomLeft = Point(padding * ratio, (height - padding) * ratio)
-                boundingRect.bottomRight =
-                    Point((width - padding) * ratio, (height - padding) * ratio)
-            }
-        }
-        return boundingRect
-    }
-
+    // TODO
 }
 
 class CropActivityViewModelFactory(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val frameDao: FrameDao,
     private val frameId: Long
 ) : ViewModelProvider.Factory {

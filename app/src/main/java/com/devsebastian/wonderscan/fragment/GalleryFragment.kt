@@ -20,19 +20,20 @@ package com.devsebastian.wonderscan.fragment
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.activity.CropAndListFramesActivity
 import com.devsebastian.wonderscan.adapter.GalleryAdapter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 
 open class GalleryFragment : Fragment() {
@@ -70,31 +71,35 @@ open class GalleryFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val v = inflater.inflate(R.layout.fragment_gallery, container, false)
-        val recyclerView: RecyclerView = v.findViewById(R.id.recycler_view)
-        recyclerView.setHasFixedSize(true)
-        recyclerView.layoutManager = GridLayoutManager(activity, 5)
         adapter = GalleryAdapter(activity, ArrayList())
-        recyclerView.adapter = adapter
-        Thread {
-            val uris = getAllImages()
-            Log.d("devdevdev", "$uris")
-            adapter.setImagePaths(uris)
-            activity?.runOnUiThread { adapter.notifyDataSetChanged() }
-        }.start()
-        val fab = v.findViewById<View?>(R.id.fab)
-        fab.setOnClickListener {
-            v.findViewById<View?>(R.id.gallery_progress).visibility = View.VISIBLE
-            Thread {
-                val uris = adapter.getSelectedUris()
-                val intent = Intent(activity, CropAndListFramesActivity::class.java)
-                intent.putExtra(getString(R.string.intent_uris), uris)
-                startActivity(intent)
-                adapter.clearSelection()
-                activity?.runOnUiThread {
-                    v.findViewById<View?>(R.id.gallery_progress).visibility = View.GONE
-                }
-            }.start()
+        v.findViewById<RecyclerView>(R.id.recycler_view).let {
+            it.setHasFixedSize(true)
+            it.layoutManager = GridLayoutManager(activity, 5)
+            it.adapter = adapter
         }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val uris = getAllImages()
+            adapter.setImagePaths(uris)
+            lifecycleScope.launch(Dispatchers.Main) { adapter.notifyDataSetChanged() }
+        }
+        v.findViewById<View?>(R.id.fab).apply {
+            setOnClickListener {
+                v.findViewById<View?>(R.id.gallery_progress).visibility = View.VISIBLE
+                lifecycleScope.launch(Dispatchers.IO) {
+                    adapter.getSelectedUris().let { uris ->
+                        Intent(activity, CropAndListFramesActivity::class.java).let {
+                            it.putExtra(getString(R.string.intent_uris), uris)
+                            adapter.clearSelection()
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                startActivity(it)
+                                v.findViewById<View?>(R.id.gallery_progress).visibility = View.GONE
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (activity?.getPreferences(Context.MODE_PRIVATE)
                 ?.getBoolean("closed_message", false) == true
         ) {

@@ -28,19 +28,18 @@ import android.view.MenuItem
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager.widget.ViewPager
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.adapter.ViewFrameAdapter
 import com.devsebastian.wonderscan.data.Frame
-import com.devsebastian.wonderscan.view.CustomViewPager
+import com.devsebastian.wonderscan.databinding.ActivityViewFramesBinding
+import com.devsebastian.wonderscan.databinding.DialogNoteBinding
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModelFactory
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -50,15 +49,24 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListener,
     ViewPager.OnPageChangeListener {
     private var docId: String? = null
-    private lateinit var viewPager: CustomViewPager
     private lateinit var viewFrameAdapter: ViewFrameAdapter
-
     private lateinit var viewModel: ViewPageActivityViewModel
+    private lateinit var binding: ActivityViewFramesBinding
+
+    private fun initialiseViewModel(docId: String) {
+        (application as WonderScanApp).database?.let { db ->
+            viewModel = ViewModelProvider(
+                this,
+                ViewPageActivityViewModelFactory(db.documentDao(), db.frameDao(), docId)
+            ).get(ViewPageActivityViewModel::class.java)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityViewFramesBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         title = ""
-        setContentView(R.layout.activity_view_frames)
         setSupportActionBar(findViewById(R.id.toolbar))
         if (supportActionBar != null) {
             supportActionBar?.setHomeButtonEnabled(true)
@@ -72,29 +80,22 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
             return
         }
 
-        (application as MyApplication).database?.let { db ->
-            viewModel = ViewModelProvider(
-                this,
-                ViewPageActivityViewModelFactory(db.documentDao(), db.frameDao(), docId!!)
-            ).get(ViewPageActivityViewModel::class.java)
-        }
+        initialiseViewModel(docId!!)
 
-        viewPager = findViewById(R.id.view_pager)
         viewFrameAdapter = ViewFrameAdapter(this, ArrayList())
-        viewPager.adapter = viewFrameAdapter
         viewModel.currentIndex = intent.getIntExtra(
             getString(R.string.intent_frame_position),
             0
         )
-        val bottomNavigationView = findViewById<BottomNavigationView?>(R.id.bottom_navigation_view)
-        bottomNavigationView.setOnItemSelectedListener(this)
-
-        viewPager.addOnPageChangeListener(this)
-
-        viewModel.frames.observe(this) { frames ->
-            viewFrameAdapter.setFrames(frames)
-            viewFrameAdapter.notifyDataSetChanged()
-            viewPager.currentItem = viewModel.currentIndex
+        binding.let {
+            it.bottomNavigationView.setOnItemSelectedListener(this)
+            it.viewPager.adapter = viewFrameAdapter
+            it.viewPager.addOnPageChangeListener(this)
+            viewModel.frames.observe(this) { frames ->
+                viewFrameAdapter.setFrames(frames)
+                viewFrameAdapter.notifyDataSetChanged()
+                it.viewPager.currentItem = viewModel.currentIndex
+            }
         }
     }
 
@@ -105,7 +106,7 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
                 intent.putExtra(getString(R.string.intent_document_id), docId)
                 intent.putExtra(
                     getString(R.string.intent_frame_id),
-                    viewFrameAdapter.get(viewPager.currentItem).id
+                    viewFrameAdapter.get(getCurrentIndex()).id
                 )
                 startActivity(intent)
             }
@@ -113,27 +114,27 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
                 showNoteDialog(
                     "Note",
                     "Write something beautiful here! This note will be saved alongside the scanned copy",
-                    viewFrameAdapter.get(viewPager.currentItem).note,
-                    viewFrameAdapter.get(viewPager.currentItem)
+                    viewFrameAdapter.get(getCurrentIndex()).note,
+                    viewFrameAdapter.get(getCurrentIndex())
                 )
             }
             R.id.menu_crop -> {
                 val cropIntent = Intent(this, CropActivity::class.java)
                 cropIntent.putExtra(
                     getString(R.string.intent_source_path),
-                    viewFrameAdapter.get(viewPager.currentItem).uri
+                    viewFrameAdapter.get(getCurrentIndex()).uri
                 )
                 cropIntent.putExtra(
                     getString(R.string.intent_cropped_path),
-                    viewFrameAdapter.get(viewPager.currentItem).croppedUri
+                    viewFrameAdapter.get(getCurrentIndex()).croppedUri
                 )
                 cropIntent.putExtra(
                     getString(R.string.intent_frame_position),
-                    viewPager.currentItem
+                    getCurrentIndex()
                 )
                 cropIntent.putExtra(
                     getString(R.string.intent_angle),
-                    viewFrameAdapter.get(viewPager.currentItem).angle
+                    viewFrameAdapter.get(getCurrentIndex()).angle
                 )
                 cropResultLauncher.launch(cropIntent)
             }
@@ -141,14 +142,14 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
                 Toast.makeText(this, "Detecting Text. Please wait", Toast.LENGTH_SHORT).show()
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                 val bitmap =
-                    BitmapFactory.decodeFile(viewFrameAdapter.get(viewPager.currentItem).editedUri)
+                    BitmapFactory.decodeFile(viewFrameAdapter.get(getCurrentIndex()).editedUri)
                 recognizer.process(InputImage.fromBitmap(bitmap, 0))
                     .addOnSuccessListener { text: Text ->
                         showNoteDialog(
                             "Detected Text",
                             "",
                             text.text,
-                            viewFrameAdapter.get(viewPager.currentItem)
+                            viewFrameAdapter.get(getCurrentIndex())
                         )
                     }
                     .addOnFailureListener {
@@ -163,12 +164,16 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
         return false
     }
 
-    var cropResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if(result.resultCode == RESULT_OK) {
-            val frame = viewFrameAdapter.get(viewPager.currentItem)
-            frame.editedUri = null
-            viewModel.updateFrame(frame)
+    var cropResultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val frame = viewFrameAdapter.get(getCurrentIndex()).apply { editedUri = null }
+                viewModel.updateFrame(frame)
+            }
         }
+
+    private fun getCurrentIndex(): Int {
+        return binding.viewPager.currentItem
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -182,69 +187,74 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
                 finish()
             }
             R.id.menu_rename -> {
-                showFrameRenameDialog(this, viewFrameAdapter.get(viewPager.currentItem))
+                showFrameRenameDialog(this, viewFrameAdapter.get(getCurrentIndex()))
             }
             R.id.menu_delete -> {
-                showFrameDeleteDialog(this, viewFrameAdapter.get(viewPager.currentItem))
+                showFrameDeleteDialog(this, viewFrameAdapter.get(getCurrentIndex()))
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
     private fun showFrameRenameDialog(activity: Activity, frame: Frame) {
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Rename")
         val frameLayout = FrameLayout(activity)
-        val editText = EditText(activity)
-        val layoutParams = FrameLayout.LayoutParams(
+        val params = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        layoutParams.setMargins(50, 12, 50, 12)
-        editText.layoutParams = layoutParams
-        editText.setText(frame.name)
-        editText.hint = "Frame Name"
-        frameLayout.addView(editText)
-        builder.setView(frameLayout)
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-            frame.name = editText.text.toString()
-            viewModel.updateFrame(frame)
+        ).apply {
+            setMargins(50, 12, 50, 12)
         }
-        builder.create().show()
+        val editText = EditText(activity).apply {
+            layoutParams = params
+            hint = "Frame Name"
+            setText(frame.name)
+        }
+        frameLayout.addView(editText)
+        AlertDialog.Builder(activity).apply {
+            setTitle("Rename")
+            setView(frameLayout)
+            setNegativeButton("Cancel", null)
+            setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                frame.name = editText.text.toString()
+                viewModel.updateFrame(frame)
+            }
+            create().show()
+        }
     }
 
     private fun showFrameDeleteDialog(activity: Activity?, frame: Frame) {
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Confirm Delete")
-        builder.setMessage("Are you sure you want to delete this frame? You won't be able to recover this frame later")
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Delete") { _, _ ->
-            viewModel.deleteFrame(frame)
+        AlertDialog.Builder(activity).apply {
+            setTitle("Confirm Delete")
+            setMessage("Are you sure you want to delete this frame? You won't be able to recover this frame later")
+            setNegativeButton("Cancel", null)
+            setPositiveButton("Delete") { _, _ ->
+                viewModel.deleteFrame(frame)
+            }
+            create().show()
         }
-        builder.create().show()
     }
 
     private fun showNoteDialog(name: String?, hint: String?, note: String?, frame: Frame) {
-        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-        val view = layoutInflater.inflate(R.layout.dialog_note, null)
-        builder.setView(view)
-        val alertDialog = builder.create()
-        alertDialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        alertDialog.show()
-        val etNote: EditText = view.findViewById(R.id.et_note)
-        etNote.hint = hint
-        val cancelBtn: TextView = view.findViewById(R.id.tv_cancel)
-        val saveBtn: TextView = view.findViewById(R.id.tv_save)
-        val title: TextView = view.findViewById(R.id.title)
-        title.text = name
-        etNote.setText(note)
-        saveBtn.setOnClickListener {
-            frame.note = etNote.text.toString()
-            viewModel.updateFrame(frame)
-            alertDialog.dismiss()
+        DialogNoteBinding.inflate(layoutInflater).let { v ->
+            AlertDialog.Builder(this@ViewPageActivity).let { builder ->
+                v.title.text = name
+                v.etNote.hint = hint
+                v.etNote.setText(note)
+                layoutInflater.inflate(R.layout.dialog_note, null).let { view ->
+                    builder.setView(view)
+                    builder.create().let { dialog ->
+                        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+                        dialog.show()
+                        v.tvSave.setOnClickListener {
+                            frame.note = v.etNote.text.toString()
+                            viewModel.updateFrame(frame)
+                            dialog.dismiss()
+                        }
+                        v.tvCancel.setOnClickListener { dialog.dismiss() }
+                    }
+                }
+            }
         }
-        cancelBtn.setOnClickListener { alertDialog.dismiss() }
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {

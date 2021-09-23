@@ -30,17 +30,16 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.databinding.ActivityScanBinding
 import com.devsebastian.wonderscan.utils.DetectBox
 import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.utils.YuvToRgbConverter
-import com.devsebastian.wonderscan.view.ScanView
 import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ScanActivityViewModelFactory
 import kotlinx.coroutines.Dispatchers
@@ -48,53 +47,50 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 class ScanActivity : BaseActivity() {
     private val requestCodePermissions = 1001
-    private val requiredPermissions: Array<String> =
+    private val requiredPermissions =
         arrayOf("android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE")
-    private var angle = 0
-    private lateinit var scanView: ScanView
-    private lateinit var viewFinder: PreviewView
-    private lateinit var captureProgress: ProgressBar
-    private lateinit var finalImage: ImageView
-    private lateinit var pageCount: TextView
-    private var executor: Executor = Executors.newSingleThreadExecutor()
-    private lateinit var viewModel: ScanActivityViewModel
     private var count = 0
+    private var angle = 0
 
-    @ExperimentalGetImage
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_scan)
+    private lateinit var executor: Executor
+    private lateinit var binding: ActivityScanBinding
+    private lateinit var viewModel: ScanActivityViewModel
+    private lateinit var converter: YuvToRgbConverter
 
-        (application as MyApplication).database?.let { db ->
+    private fun initialiseViewModel() {
+        (application as WonderScanApp).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
                 ScanActivityViewModelFactory(db.documentDao(), db.frameDao())
             ).get(ScanActivityViewModel::class.java)
         }
-        captureProgress = findViewById(R.id.pb_scan)
-        finalImage = findViewById(R.id.iv_recent_capture)
-        val frameLayout = findViewById<FrameLayout?>(R.id.camera_frame)
-        viewFinder = findViewById(R.id.viewFinder)
-        scanView = findViewById(R.id.scan_view)
-        pageCount = findViewById(R.id.page_count)
-        val intent = intent
-        if (intent != null) {
-            val docId = intent.getStringExtra(getString(R.string.intent_document_id))
-            if (docId != null) {
-                viewModel.getPageCount(docId).observe(this) { count -> this.count = count }
-            }
+    }
+
+    private fun confirm() {
+        val simpleDateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
+        val name = getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
+        viewModel.capture(name, angle, count, this)
+    }
+
+    @ExperimentalGetImage
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityScanBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        executor = ContextCompat.getMainExecutor(this)
+        converter = YuvToRgbConverter(this)
+        initialiseViewModel()
+        intent.getStringExtra(getString(R.string.intent_document_id))?.let { docId ->
+            viewModel.getPageCount(docId).observe(this) { count -> this.count = count }
         }
         val width = Utils.getDeviceWidth()
         val height = (width * (4 / 3f)).toInt()
-        frameLayout.layoutParams = LinearLayout.LayoutParams(width, height)
-        finalImage.setOnClickListener {
-            val simpleDateFormat = SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
-            val name = getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
-            viewModel.capture(name, angle, count, this)
+        binding.cameraFrame.layoutParams = LinearLayout.LayoutParams(width, height)
+        binding.ivRecentCapture.setOnClickListener {
+            confirm()
         }
         if (allPermissionsGranted()) {
             startCamera()
@@ -144,52 +140,58 @@ class ScanActivity : BaseActivity() {
     }
 
     @ExperimentalGetImage
-    fun bindPreview(cameraProvider: ProcessCameraProvider) {
-        val preview = Preview.Builder()
-            .build()
+    fun processImage(imageProxy: ImageProxy) {
+        imageProxy.image?.let { image ->
+            if (image.format == ImageFormat.YUV_420_888) {
+                lifecycleScope.launch(Dispatchers.Default) {
+                    Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                        .let { bitmap ->
+                            converter.yuvToRgb(image, bitmap)
+                            DetectBox.findCorners(bitmap, angle).let { box ->
+                                imageProxy.close()
+                                lifecycleScope.launch(Dispatchers.Main) {
+                                    binding.scanView.setBoundingRect(box)
+                                }
+                            }
+                        }
+                }
+            } else {
+                imageProxy.close()
+            }
+        }
+    }
+
+    @ExperimentalGetImage
+    private fun bindPreview(cameraProvider: ProcessCameraProvider) {
+        val preview = Preview.Builder().build()
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(CameraSelector.LENS_FACING_BACK)
             .build()
         val builder = ImageCapture.Builder()
-        val imageCapture = builder
-            .build()
-        val imageAnalysis = ImageAnalysis.Builder()
-            .build()
-        preview.setSurfaceProvider(viewFinder.surfaceProvider)
+        val imageCapture = builder.build()
+        val imageAnalysis = ImageAnalysis.Builder().build()
+
+        preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
         cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture, imageAnalysis)
-        val captureImageBtn = findViewById<View?>(R.id.btn_capture)
-        val converter = YuvToRgbConverter(this)
         imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(this), { imageProxy: ImageProxy ->
             angle = imageProxy.imageInfo.rotationDegrees
-            val image = imageProxy.image
-            if (image != null && image.format == ImageFormat.YUV_420_888) {
-                lifecycleScope.launch(Dispatchers.Default) {
-                    val bmp = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
-                    converter.yuvToRgb(image, bmp)
-                    val boundingRect = DetectBox.findCorners(bmp, angle)
-                    imageProxy.close()
-                    runOnUiThread {
-                        scanView.setBoundingRect(boundingRect)
-                    }
-                }
-            }
+            processImage(imageProxy)
         })
 
-        captureImageBtn.setOnClickListener {
-            captureProgress.visibility = View.VISIBLE
+        binding.btnCapture.setOnClickListener {
+            binding.pbScan.visibility = View.VISIBLE
             val file = Utils.createPhotoFile(this)
-            executor = ContextCompat.getMainExecutor(this)
-            val outputFileOptions = ImageCapture.OutputFileOptions.Builder(file).build()
             imageCapture.takePicture(
-                outputFileOptions,
+                ImageCapture.OutputFileOptions.Builder(file).build(),
                 executor,
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        val intent = Intent(this@ScanActivity, CropActivity::class.java)
-                        intent.putExtra(getString(R.string.intent_source_path), file.absolutePath)
-                        intent.putExtra(getString(R.string.intent_angle), angle)
-                        resultLauncher.launch(intent)
-                        captureProgress.visibility = View.GONE
+                        Intent(this@ScanActivity, CropActivity::class.java).let {
+                            it.putExtra(getString(R.string.intent_source_path), file.absolutePath)
+                            it.putExtra(getString(R.string.intent_angle), angle)
+                            resultLauncher.launch(it)
+                        }
+                        binding.pbScan.visibility = View.GONE
                     }
 
                     override fun onError(error: ImageCaptureException) {
@@ -202,13 +204,16 @@ class ScanActivity : BaseActivity() {
     private var resultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.let {
-                    val croppedPath = it.getStringExtra(getString(R.string.intent_cropped_path))
-                    val sourcePath = it.getStringExtra(getString(R.string.intent_source_path))
+                result.data?.let { intent ->
+                    val croppedPath = intent.getStringExtra(getString(R.string.intent_cropped_path))
+                    val sourcePath = intent.getStringExtra(getString(R.string.intent_source_path))
                     viewModel.addPath(sourcePath!!, croppedPath!!)
-                    finalImage.setImageBitmap(BitmapFactory.decodeFile(croppedPath))
-                    if (pageCount.visibility != View.VISIBLE) pageCount.visibility = View.VISIBLE
-                    pageCount.text = viewModel.pathsCount().toString()
+                    binding.let {
+                        it.ivRecentCapture.setImageBitmap(BitmapFactory.decodeFile(croppedPath))
+                        if (it.pageCount.visibility != View.VISIBLE) it.pageCount.visibility =
+                            View.VISIBLE
+                        it.pageCount.text = viewModel.pathsCount().toString()
+                    }
                 }
             }
         }

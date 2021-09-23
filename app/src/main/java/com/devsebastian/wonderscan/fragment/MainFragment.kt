@@ -26,17 +26,27 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.activity.ScanActivity
 import com.devsebastian.wonderscan.adapter.DocumentsAdapter
 import com.devsebastian.wonderscan.viewmodel.MainActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.MainActivityViewModelFactory
 
-open class MainFragment : Fragment(), View.OnClickListener {
-    lateinit var documentsAdapter: DocumentsAdapter
-
+open class MainFragment : Fragment() {
+    private lateinit var documentsAdapter: DocumentsAdapter
     private lateinit var viewModel: MainActivityViewModel
+
+    private fun initialiseViewModel() {
+        activity?.let { activity ->
+            (activity.application as WonderScanApp).database?.let { db ->
+                viewModel = ViewModelProvider(
+                    activity,
+                    MainActivityViewModelFactory(db.documentDao(), db.frameDao())
+                ).get(MainActivityViewModel::class.java)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,33 +55,22 @@ open class MainFragment : Fragment(), View.OnClickListener {
     ): View? {
         val v = inflater.inflate(R.layout.fragment_main, container, false)
         val fab = v.findViewById<View?>(R.id.fab)
-        fab.setOnClickListener(this)
-
-        activity?.let { activity ->
-            (activity.application as MyApplication).database?.let { db ->
-                viewModel = ViewModelProvider(
-                    activity,
-                    MainActivityViewModelFactory(db.documentDao(), db.frameDao())
-                ).get(MainActivityViewModel::class.java)
-            }
-        }
-
-        val recyclerView: RecyclerView = v.findViewById(R.id.recycler_view)
-        recyclerView.setHasFixedSize(true)
-
-
-
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        viewModel.getAllDocuments()?.observe(viewLifecycleOwner) { documents ->
-            documentsAdapter = DocumentsAdapter(requireActivity(), documents, viewModel)
-            recyclerView.adapter = documentsAdapter
-        }
-        return v
-    }
-
-    override fun onClick(view: View) {
-        if (view.id == R.id.fab) {
+        fab.setOnClickListener {
             startActivity(Intent(requireActivity(), ScanActivity::class.java))
         }
+
+        initialiseViewModel()
+
+        documentsAdapter = DocumentsAdapter(requireActivity(), mutableListOf(), viewModel)
+
+        v.findViewById<RecyclerView>(R.id.recycler_view).let {
+            it.setHasFixedSize(true)
+            it.layoutManager = LinearLayoutManager(context)
+            it.adapter = documentsAdapter
+            viewModel.getAllDocuments()?.observe(viewLifecycleOwner) { documents ->
+                documentsAdapter.updateDocuments(documents)
+            }
+        }
+        return v
     }
 }

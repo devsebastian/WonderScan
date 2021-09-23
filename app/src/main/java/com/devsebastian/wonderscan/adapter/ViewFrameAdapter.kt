@@ -21,6 +21,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.viewpager.widget.PagerAdapter
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -47,18 +48,21 @@ class ViewFrameAdapter(private val activity: Activity, private var frames: Mutab
         this.frames = frames
     }
 
+    private fun loadImage(uri: String?, imageView: ImageView) {
+        Glide.with(activity).load(uri).diskCacheStrategy(DiskCacheStrategy.NONE)
+            .skipMemoryCache(true).into(imageView)
+    }
+
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val frame = frames[position]
-        @SuppressLint("InflateParams") val v =
-            activity.layoutInflater.inflate(R.layout.row_page, null)
+
+        @SuppressLint("InflateParams")
+        val v = activity.layoutInflater.inflate(R.layout.row_page, null)
         val imageView: ZoomageView = v.findViewById(R.id.ssiv_page)
         when {
-            frame.editedUri != null -> Glide.with(activity).load(frame.editedUri).diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true).into(imageView)
-            frame.croppedUri != null -> Glide.with(activity).load(frame.croppedUri).diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true).into(imageView)
-            else -> Glide.with(activity).load(frame.uri).diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true).into(imageView)
+            frame.editedUri != null -> loadImage(frame.editedUri, imageView)
+            frame.croppedUri != null -> loadImage(frame.croppedUri, imageView)
+            else -> loadImage(frame.uri, imageView)
         }
         container.addView(v)
         return v

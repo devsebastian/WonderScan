@@ -27,7 +27,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.lifecycle.*
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.dao.DocumentDao
 import com.devsebastian.wonderscan.dao.FrameDao
@@ -44,7 +44,7 @@ import kotlin.collections.ArrayList
 
 
 class CropAndListFramesActivityViewModel(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val documentDao: DocumentDao,
     private val frameDao: FrameDao
 ) : AndroidViewModel(application) {
@@ -52,19 +52,23 @@ class CropAndListFramesActivityViewModel(
     var document: Document = Document()
     var frames: LiveData<MutableList<Frame>> = frameDao.getFrames(document.id)
 
-    fun setup(paths: MutableList<String>) {
+    private fun getName(): String {
         val simpleDateFormat =
             SimpleDateFormat("dd-MMM-yyyy hh:mm:ss", Locale.getDefault())
-        val docName: String =
-            application.getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
+        return application.getString(R.string.app_name) + " " + simpleDateFormat.format(Date())
+    }
+
+    fun setup(paths: MutableList<String>) {
+        val docName: String = getName()
         document.name = docName
         document.dateTime = System.currentTimeMillis()
         viewModelScope.launch(Dispatchers.IO) {
             documentDao.insert(document)
-            val frames = getFramesFromImagePaths(paths)
-            for (frame in frames) {
-                viewModelScope.launch(Dispatchers.Default) {
-                    cropAndFormat(frame, application, frameDao)
+            getFramesFromImagePaths(paths).let { frames ->
+                for (frame in frames) {
+                    viewModelScope.launch(Dispatchers.Default) {
+                        cropAndFormat(frame, application, frameDao)
+                    }
                 }
             }
         }
@@ -80,8 +84,7 @@ class CropAndListFramesActivityViewModel(
                         application,
                         "PDF document saved in " + uri.path,
                         Toast.LENGTH_SHORT
-                    )
-                        .show()
+                    ).show()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -90,39 +93,42 @@ class CropAndListFramesActivityViewModel(
     }
 
     fun showConfirmDeleteDialog(activity: Activity) {
-        val builder = AlertDialog.Builder(application)
-        builder.setTitle("Confirm Delete")
-        builder.setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Delete") { _, _ ->
-            documentDao.delete(document)
-            if (!activity.isFinishing) activity.finish()
+        AlertDialog.Builder(application).apply {
+            setTitle("Confirm Delete")
+            setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
+            setNegativeButton("Cancel", null)
+            setPositiveButton("Delete") { _, _ ->
+                documentDao.delete(document)
+                if (!activity.isFinishing) activity.finish()
+            }
+            create().show()
         }
-        builder.create().show()
     }
 
 
     fun showRenameDialog() {
         viewModelScope.launch(Dispatchers.Main) {
-            val builder = AlertDialog.Builder(application)
-            builder.setTitle("Rename")
             val frameLayout = FrameLayout(application)
-            val editText = EditText(application)
-            val layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            layoutParams.setMargins(50, 12, 50, 12)
-            editText.layoutParams = layoutParams
-            editText.setText(document.name)
-            frameLayout.addView(editText)
-            builder.setView(frameLayout)
-            builder.setNegativeButton("Cancel", null)
-            builder.setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-                document.name = editText.text.toString()
-                documentDao.update(document)
+            val editText = EditText(application).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(50, 12, 50, 12)
+                }
+                setText(document.name)
             }
-            builder.create().show()
+            frameLayout.addView(editText)
+            AlertDialog.Builder(application).apply {
+                setTitle("Rename")
+                setView(frameLayout)
+                setNegativeButton("Cancel", null)
+                setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                    document.name = editText.text.toString()
+                    documentDao.update(document)
+                }
+                create().show()
+            }
         }
     }
 
@@ -148,7 +154,7 @@ class CropAndListFramesActivityViewModel(
 }
 
 class CropAndListFramesActivityViewModelFactory(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val documentDao: DocumentDao,
     private val frameDao: FrameDao
 ) : ViewModelProvider.Factory {

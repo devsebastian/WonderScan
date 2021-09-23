@@ -35,7 +35,7 @@ import com.devsebastian.wonderscan.data.Frame
 import java.util.*
 
 class ProgressFramesAdapter(
-    var activity: Activity,
+    private var activity: Activity,
     private var docId: String,
     var frames: List<Frame>
 ) : RecyclerView.Adapter<ProgressFramesAdapter.ViewHolder?>() {
@@ -60,29 +60,31 @@ class ProgressFramesAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val frame = frames[position]
-        holder.itemView.setOnClickListener {
-            val intent = Intent(activity, ViewPageActivity::class.java)
-            intent.putExtra(activity.getString(R.string.intent_document_id), docId)
-            intent.putExtra(activity.getString(R.string.intent_frame_position), position)
-            activity.startActivityForResult(intent, ListFramesActivity.VIEW_PAGE_ACTIVITY)
-        }
-        if (frame.name == null || frame.name!!.isEmpty()) {
-            holder.textView.text = (position + 1).toString()
-        } else {
-            holder.textView.text = frame.name
-        }
-        if (frame.editedUri == null) {
-            Glide.with(activity)
-                .load(frame.uri)
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
-                .into(holder.imageView)
-        } else {
-            Glide.with(activity)
-                .load(frame.editedUri)
-                .into(holder.imageView)
-            if (holder.progressBar.visibility == View.VISIBLE)
-                holder.progressBar.visibility = View.GONE
+        holder.apply {
+            itemView.setOnClickListener {
+                val intent = Intent(activity, ViewPageActivity::class.java)
+                intent.putExtra(activity.getString(R.string.intent_document_id), docId)
+                intent.putExtra(activity.getString(R.string.intent_frame_position), position)
+                activity.startActivityForResult(intent, ListFramesActivity.VIEW_PAGE_ACTIVITY)
+            }
+            if (frame.name == null || frame.name!!.isEmpty()) {
+                textView.text = (position + 1).toString()
+            } else {
+                textView.text = frame.name
+            }
+            if (frame.editedUri == null) {
+                Glide.with(activity)
+                    .load(frame.uri)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .into(imageView)
+            } else {
+                Glide.with(activity)
+                    .load(frame.editedUri)
+                    .into(imageView)
+                if (progressBar.visibility == View.VISIBLE)
+                    progressBar.visibility = View.GONE
+            }
         }
     }
 

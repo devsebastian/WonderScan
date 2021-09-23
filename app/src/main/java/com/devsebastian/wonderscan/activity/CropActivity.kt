@@ -21,17 +21,17 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.view.View
+import android.view.View.VISIBLE
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.data.BoundingRect
+import com.devsebastian.wonderscan.databinding.ActivityCropBinding
 import com.devsebastian.wonderscan.utils.DetectBox
 import com.devsebastian.wonderscan.utils.Utils
-import com.devsebastian.wonderscan.view.CropView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.opencv.android.Utils.bitmapToMat
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Point
@@ -44,82 +44,82 @@ import kotlin.math.sqrt
 
 class CropActivity : BaseActivity() {
     private var ratio = 0.0
-    private var croppedPath: String? = null
-    private var editedPath: String? = null
-    private var cropped = false
+    private var croppedUri: String? = null
+    private var editedUri: String? = null
+    private lateinit var binding: ActivityCropBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_crop)
+        binding = ActivityCropBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        croppedPath = intent.getStringExtra(getString(R.string.intent_cropped_path))
-        editedPath = intent.getStringExtra(getString(R.string.intent_edited_path))
-        val path = intent.getStringExtra(getString(R.string.intent_source_path))
+        croppedUri = intent.getStringExtra(getString(R.string.intent_cropped_path))
+        editedUri = intent.getStringExtra(getString(R.string.intent_edited_path))
+        val uri = intent.getStringExtra(getString(R.string.intent_source_path))
         val angle = intent.getIntExtra(getString(R.string.intent_angle), 0)
         val framePos = intent.getIntExtra(getString(R.string.intent_frame_position), 0)
+        val bitmap = BitmapFactory.decodeFile(uri)
+        val width = Utils.getDeviceWidth()
+        val height = (bitmap.height * (width / bitmap.width.toFloat())).toInt()
+        val viewHeight = bitmap.height * (width / bitmap.width.toFloat())
+        val scaleFactor = width / viewHeight * 0.9f
+        val params = LinearLayout.LayoutParams(width, height)
+        ratio = width / bitmap.width.toDouble()
 
-        val cropView = findViewById<CropView>(R.id.cv_crop)
-        val confirmBtn = findViewById<TextView>(R.id.tv_confirm)
-        val retakeBtn = findViewById<TextView>(R.id.tv_retake)
+        binding.cvCrop.let {
+            it.setImageBitmap(bitmap)
+            it.animate()
+                .rotation(angle.toFloat())
+                .scaleX(scaleFactor)
+                .scaleY(scaleFactor)
+                .setDuration(500)
+                .start()
+            it.layoutParams = params
+        }
 
-        val deviceWidth = Utils.getDeviceWidth()
-
-        val bitmap = BitmapFactory.decodeFile(path)
-        cropView.setImageBitmap(bitmap)
-
-        val viewHeight = bitmap.height * (deviceWidth / bitmap.width.toFloat())
-        val scaleFactor = deviceWidth / viewHeight * 0.9f
-
-        cropView.animate()
-            .rotation(angle.toFloat())
-            .scaleX(scaleFactor)
-            .scaleY(scaleFactor)
-            .setDuration(500)
-            .start()
-
-        val params = LinearLayout.LayoutParams(
-            deviceWidth, (bitmap.height * (deviceWidth / bitmap.width.toFloat())).toInt()
-        )
-        cropView.layoutParams = params
-        ratio = deviceWidth / bitmap.width.toDouble()
 
         lifecycleScope.launch(Dispatchers.Default) {
             var boundingRect = DetectBox.findCorners(bitmap, 0)
             if (boundingRect == null) {
-                val width = bitmap.width
-                val height = bitmap.height
-                val padding = width * 0.1
-                boundingRect = BoundingRect()
-                boundingRect.topLeft = Point(padding * ratio, padding * ratio)
-                boundingRect.topRight = Point((width - padding) * ratio, padding * ratio)
-                boundingRect.bottomLeft = Point(padding * ratio, (height - padding) * ratio)
-                boundingRect.bottomRight =
-                    Point((width - padding) * ratio, (height - padding) * ratio)
+                val w = bitmap.width
+                val h = bitmap.height
+                val padding = w * 0.1
+                boundingRect = BoundingRect().apply {
+                    topLeft = Point(padding * ratio, padding * ratio)
+                    topRight = Point((w - padding) * ratio, padding * ratio)
+                    bottomLeft = Point(padding * ratio, (h - padding) * ratio)
+                    bottomRight = Point((w - padding) * ratio, (h - padding) * ratio)
+                }
             }
-            cropView.setBoundingRect(boundingRect)
+            binding.cvCrop.setBoundingRect(boundingRect)
         }
 
-        retakeBtn.setOnClickListener {
+        binding.tvRetake.setOnClickListener {
             setResult(RESULT_CANCELED)
             finish()
         }
 
-        confirmBtn.setOnClickListener {
-            findViewById<View>(R.id.spinkit_frame).visibility = View.VISIBLE
+        binding.tvConfirm.setOnClickListener {
+            binding.progressFrame.visibility = VISIBLE
             lifecycleScope.launch(Dispatchers.Default) {
-                val mat = getPerspectiveTransform(bitmap, cropView.getBoundingRect(), ratio)
-                Utils.rotateMat(mat, angle)
-                if (croppedPath == null) croppedPath =
-                    Utils.createPhotoFile(this@CropActivity).absolutePath
-                if (editedPath != null) File(editedPath!!).delete()
-                Utils.saveMat(mat, croppedPath)
+                editedUri?.let { File(it).delete() }
+                croppedUri = croppedUri ?: Utils.createPhotoFile(this@CropActivity).absolutePath
+                getPerspectiveTransform(
+                    bitmap,
+                    binding.cvCrop.getBoundingRect(),
+                    ratio
+                ).run {
+                    Utils.rotateMat(this, angle)
+                    Utils.saveMat(this, croppedUri)
+                }
                 bitmap.recycle()
-                val i = Intent()
-                i.putExtra(getString(R.string.intent_source_path), path)
-                i.putExtra(getString(R.string.intent_cropped_path), croppedPath)
-                i.putExtra(getString(R.string.intent_frame_position), framePos)
-                i.putExtra(getString(R.string.intent_angle), angle)
-                setResult(RESULT_OK, i)
+                Intent().let {
+                    it.putExtra(getString(R.string.intent_source_path), uri)
+                    it.putExtra(getString(R.string.intent_cropped_path), croppedUri)
+                    it.putExtra(getString(R.string.intent_frame_position), framePos)
+                    it.putExtra(getString(R.string.intent_angle), angle)
+                    setResult(RESULT_OK, it)
+                }
                 finish()
             }
         }
@@ -131,21 +131,20 @@ class CropActivity : BaseActivity() {
             boundingRect: BoundingRect,
             ratio: Double
         ): Mat {
-            val mat = Mat()
-            org.opencv.android.Utils.bitmapToMat(bitmap, mat)
-            val srcMat = Mat(4, 1, CvType.CV_32FC2)
-            val dstMat = Mat(4, 1, CvType.CV_32FC2)
             val tl = boundingRect.topLeft
             val tr = boundingRect.topRight
             val bl = boundingRect.bottomLeft
             val br = boundingRect.bottomRight
-            srcMat.put(
-                0, 0,
-                tl.x / ratio, tl.y / ratio,
-                bl.x / ratio, bl.y / ratio,
-                br.x / ratio, br.y / ratio,
-                tr.x / ratio, tr.y / ratio
-            )
+            val srcMat = Mat(4, 1, CvType.CV_32FC2).apply {
+                put(
+                    0, 0,
+                    tl.x / ratio, tl.y / ratio,
+                    bl.x / ratio, bl.y / ratio,
+                    br.x / ratio, br.y / ratio,
+                    tr.x / ratio, tr.y / ratio
+                )
+            }
+            val dstMat = Mat(4, 1, CvType.CV_32FC2)
             val hwRatio = getHWRatio(tl, tr, bl, br, bitmap.width, bitmap.height, ratio)
             val height: Double
             val width: Double
@@ -165,10 +164,13 @@ class CropActivity : BaseActivity() {
                 width, height,
                 width, 0.0
             )
-            val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
-            val dst = mat.clone()
-            Imgproc.warpPerspective(mat, dst, perspectiveTransform, Size(width, height))
-            return dst
+
+            val mat = Mat()
+            bitmapToMat(bitmap, mat)
+            return mat.clone().apply {
+                val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
+                Imgproc.warpPerspective(mat, this, perspectiveTransform, Size(width, height))
+            }
         }
 
         fun getPerspectiveTransform(
@@ -202,10 +204,10 @@ class CropActivity : BaseActivity() {
                 width, height,
                 widthA, 0.0
             )
-            val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
-            val dst = mat.clone()
-            Imgproc.warpPerspective(mat, dst, perspectiveTransform, Size(width, height))
-            return dst
+            return mat.clone().apply {
+                val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
+                Imgproc.warpPerspective(mat, this, perspectiveTransform, Size(width, height))
+            }
         }
 
         private fun sqr(u: Double): Double {

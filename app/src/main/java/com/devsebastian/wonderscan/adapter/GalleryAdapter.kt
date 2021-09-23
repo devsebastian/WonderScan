@@ -57,33 +57,33 @@ class GalleryAdapter(var context: Context?, private var data: MutableList<String
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        val listItem =
-            layoutInflater.inflate(R.layout.row_image, parent, false)
-        return ViewHolder(listItem)
+        return ViewHolder(layoutInflater.inflate(R.layout.row_image, parent, false))
     }
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val uri = data[position]
-        context?.let {
-            Glide.with(it).load(uri).centerCrop().downsample(DownsampleStrategy.AT_MOST)
-                .into(holder.imageView)
-        }
-        if (positions.contains(position)) {
-            holder.imageView.alpha = 0.5f
-            holder.bubble.text = (positions.indexOf(position) + 1).toString()
-            holder.bubble.visibility = View.VISIBLE
-        } else {
-            holder.imageView.alpha = 1f
-            holder.bubble.visibility = View.GONE
-        }
-        holder.imageView.setOnClickListener {
-            if (positions.contains(holder.adapterPosition)) {
-                positions.remove(Integer.valueOf(holder.adapterPosition))
-                notifyDataSetChanged()
+        holder.apply {
+            context?.let {
+                Glide.with(it).load(uri).centerCrop().downsample(DownsampleStrategy.AT_MOST)
+                    .into(imageView)
+            }
+            if (positions.contains(position)) {
+                imageView.alpha = 0.5f
+                bubble.text = (positions.indexOf(position) + 1).toString()
+                bubble.visibility = View.VISIBLE
             } else {
-                positions.add(holder.adapterPosition)
-                notifyItemChanged(holder.adapterPosition)
+                imageView.alpha = 1f
+                bubble.visibility = View.GONE
+            }
+            imageView.setOnClickListener {
+                if (positions.contains(adapterPosition)) {
+                    positions.remove(Integer.valueOf(adapterPosition))
+                    notifyDataSetChanged()
+                } else {
+                    positions.add(adapterPosition)
+                    notifyItemChanged(adapterPosition)
+                }
             }
         }
     }

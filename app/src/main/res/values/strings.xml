@@ -52,6 +52,8 @@
     <string name="preference_share">preference_share</string>
     <string name="intent_frame_id">frameId</string>
     <string name="search_any_document">Search any document</string>
+    <string name="retake">Retake</string>
+    <string name="confirm">Confirm</string>
 
     <string-array name="themes">
         <item>@string/dark_theme</item>

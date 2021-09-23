@@ -24,10 +24,10 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.databinding.ActivityMainBinding
 import com.devsebastian.wonderscan.fragment.GalleryFragment
 import com.devsebastian.wonderscan.fragment.MainFragment
 import com.devsebastian.wonderscan.fragment.SettingsFragment
@@ -46,12 +46,12 @@ class MainActivity : BaseActivity() {
             }
         }
     }
-    private val requiredPermissions: Array<String> =
-        arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    private val requiredPermissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private var mainFragment = MainFragment()
     private var galleryFragment = GalleryFragment()
     private var settingsFragment = SettingsFragment()
     private lateinit var bottomNavigationView: BottomNavigationView
+
     public override fun onResume() {
         super.onResume()
         if (!OpenCVLoader.initDebug()) {
@@ -76,17 +76,16 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        val toolbar = findViewById<Toolbar?>(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        val binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(findViewById(R.id.toolbar))
         title = ""
         if (!allPermissionsGranted()) {
             ActivityCompat.requestPermissions(this, requiredPermissions, REQUEST_CODE_PERMISSIONS)
         }
         supportFragmentManager.beginTransaction().replace(R.id.fragment_holder, mainFragment)
             .commitNow()
-        bottomNavigationView = findViewById(R.id.bottom_navigation_view)
-        bottomNavigationView.setOnItemSelectedListener { item: MenuItem ->
+        binding.bottomNavigationView.setOnItemSelectedListener { item: MenuItem ->
             val transaction = supportFragmentManager.beginTransaction()
             when (item.itemId) {
                 R.id.menu_home -> {

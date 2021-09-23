@@ -24,7 +24,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.*
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.dao.DocumentDao
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.Document
@@ -40,7 +40,7 @@ import java.io.IOException
 
 
 class ListFrameActivityViewModel(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val documentDao: DocumentDao,
     private val frameDao: FrameDao,
     private val docId: String
@@ -51,14 +51,15 @@ class ListFrameActivityViewModel(
 
     fun processUnprocessedFrames(docId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val frames = frameDao.getFramesSync(docId)
-            for (i in frames.indices) {
-                if (frames[i].editedUri == null) {
-                    val frame = frames[i]
-                    viewModelScope.launch(Dispatchers.Default) {
-                        if (frame.croppedUri == null)
-                            cropAndFormat(frame, application, frameDao)
-                        else processFrame(application, frame)
+            frameDao.getFramesSync(docId).let { frames ->
+                for (i in frames.indices) {
+                    if (frames[i].editedUri == null) {
+                        val frame = frames[i]
+                        viewModelScope.launch(Dispatchers.Default) {
+                            if (frame.croppedUri == null)
+                                cropAndFormat(frame, application, frameDao)
+                            else processFrame(application, frame)
+                        }
                     }
                 }
             }
@@ -103,11 +104,12 @@ class ListFrameActivityViewModel(
     fun sendCreateFileIntent(type: String?, resultLauncher: ActivityResultLauncher<Intent>) {
         viewModelScope.launch(Dispatchers.IO) {
             val name = documentDao.getDocumentName(docId)
-            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.type = type
-            intent.putExtra(Intent.EXTRA_TITLE, name)
-            resultLauncher.launch(intent)
+            Intent(Intent.ACTION_CREATE_DOCUMENT).let {
+                it.addCategory(Intent.CATEGORY_OPENABLE)
+                it.type = type
+                it.putExtra(Intent.EXTRA_TITLE, name)
+                resultLauncher.launch(it)
+            }
         }
     }
 
@@ -121,8 +123,7 @@ class ListFrameActivityViewModel(
                         application,
                         "PDF document saved in " + uri.path,
                         Toast.LENGTH_SHORT
-                    )
-                        .show()
+                    ).show()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -132,7 +133,7 @@ class ListFrameActivityViewModel(
 }
 
 class ListFrameActivityViewModelFactory(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val documentDao: DocumentDao,
     private val frameDao: FrameDao,
     private val docId: String

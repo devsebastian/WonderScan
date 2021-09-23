@@ -22,12 +22,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.dao.FrameDao
 import com.devsebastian.wonderscan.data.Frame
 
 class EditActivityViewModel(
-    application: MyApplication,
+    application: WonderScanApp,
     private val frameDao: FrameDao
 ) : AndroidViewModel(application) {
     var frame: LiveData<Frame>? = null
@@ -39,7 +39,7 @@ class EditActivityViewModel(
 }
 
 class EditActivityViewModelFactory(
-    private val application: MyApplication,
+    private val application: WonderScanApp,
     private val frameDao: FrameDao
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {

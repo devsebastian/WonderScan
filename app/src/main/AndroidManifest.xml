@@ -28,7 +28,7 @@
 
     <application
         android:allowBackup="true"
-        android:name=".MyApplication"
+        android:name=".WonderScanApp"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
@@ -39,7 +39,7 @@
         <activity android:name=".activity.ViewPageActivity" />
         <activity android:name=".activity.ListFramesActivity" />
         <activity android:name=".activity.CropAndListFramesActivity" />
-        <activity android:name=".activity.MainActivity">
+        <activity android:exported="true" android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

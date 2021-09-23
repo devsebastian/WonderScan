@@ -20,16 +20,13 @@ package com.devsebastian.wonderscan.activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.MenuItem
-import android.widget.EditText
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.adapter.DocumentsAdapter
-import com.devsebastian.wonderscan.viewmodel.MainActivityViewModel
+import com.devsebastian.wonderscan.databinding.ActivitySearchBinding
 import com.devsebastian.wonderscan.viewmodel.SearchActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.SearchActivityViewModelFactory
 
@@ -44,18 +41,8 @@ class SearchActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_search)
-        setSupportActionBar(findViewById(R.id.toolbar))
-        if (supportActionBar != null) {
-            supportActionBar?.setHomeButtonEnabled(true)
-            supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        }
-        val searchEt = findViewById<EditText?>(R.id.et_search)
-
-        (application as MyApplication).database?.let { db ->
+    private fun initialiseViewModel() {
+        (application as WonderScanApp).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
                 SearchActivityViewModelFactory(db.documentDao(), db.frameDao())
@@ -63,28 +50,49 @@ class SearchActivity : BaseActivity() {
                 SearchActivityViewModel::class.java
             )
         }
+    }
 
-        val recyclerView = findViewById<RecyclerView?>(R.id.recycler_view)
-        recyclerView.setHasFixedSize(true)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        documentsAdapter = DocumentsAdapter(this, ArrayList(), viewModel)
-        recyclerView.adapter = documentsAdapter
+    private lateinit var binding: ActivitySearchBinding
 
-        viewModel.documents.observe(this) { documents ->
-            Log.d("devdevdev", "$documents")
-            documentsAdapter.updateDocuments(documents)
-            documentsAdapter.notifyDataSetChanged()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivitySearchBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(findViewById(R.id.toolbar))
+        if (supportActionBar != null) {
+            supportActionBar?.setHomeButtonEnabled(true)
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
         }
 
-        searchEt.requestFocus()
-        searchEt.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence?, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence?, i: Int, i1: Int, i2: Int) {
-                Log.d("devdevdev", "$charSequence")
-                viewModel.search(charSequence.toString())
-            }
+        initialiseViewModel()
+        documentsAdapter = DocumentsAdapter(this, ArrayList(), viewModel)
 
-            override fun afterTextChanged(editable: Editable?) {}
-        })
+        binding.recyclerView.let {
+            it.layoutManager = LinearLayoutManager(this)
+            it.adapter = documentsAdapter
+        }
+
+        viewModel.documents.observe(this) { documents ->
+            documentsAdapter.updateDocuments(documents)
+        }
+
+        binding.etSearch.let {
+            it.requestFocus()
+            it.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(
+                    charSequence: CharSequence?,
+                    i: Int,
+                    i1: Int,
+                    i2: Int
+                ) {
+                }
+
+                override fun onTextChanged(charSequence: CharSequence?, i: Int, i1: Int, i2: Int) {
+                    viewModel.search(charSequence.toString())
+                }
+
+                override fun afterTextChanged(editable: Editable?) {}
+            })
+        }
     }
 }

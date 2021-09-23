@@ -22,76 +22,85 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.*
+import android.widget.ImageView
+import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
+import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.devsebastian.wonderscan.MyApplication
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
 import com.devsebastian.wonderscan.data.Frame
+import com.devsebastian.wonderscan.databinding.ActivityEditBinding
 import com.devsebastian.wonderscan.utils.BrightnessAndContrastController
 import com.devsebastian.wonderscan.utils.Filter
 import com.devsebastian.wonderscan.utils.Utils
 import com.devsebastian.wonderscan.viewmodel.EditActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.EditActivityViewModelFactory
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
-import com.jsibbold.zoomage.ZoomageView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.opencv.android.Utils.matToBitmap
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
-class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeListener,
+class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListener,
     NavigationBarView.OnItemSelectedListener {
     private lateinit var croppedMat: Mat
     private lateinit var editedMat: Mat
-    private lateinit var mainImageView: ZoomageView
-    private lateinit var modifyToolsLayout: LinearLayout
-    private lateinit var tvBrightness: TextView
-    private lateinit var tvContrast: TextView
-    private var modifyToolsIsVisible = false
-    private var currentActiveId = R.id.iv_original_image
     private lateinit var frame: Frame
-    private var executorService: ExecutorService = Executors.newFixedThreadPool(5)
     private lateinit var brightnessAndContrastController: BrightnessAndContrastController
+    private lateinit var binding: ActivityEditBinding
+    private lateinit var viewModel: EditActivityViewModel
+
+    private var currentActiveId = R.id.iv_original_image
+    private var modifyToolsIsVisible = false
 
     private fun setupPreview() {
         croppedMat = Utils.readMat(frame.croppedUri)
-        if (frame.editedUri != null) {
-            editedMat = Utils.readMat(frame.editedUri)
-        } else {
+        frame.editedUri?.let {
+            editedMat = Utils.readMat(it)
+        }
+        frame.editedUri ?: run {
             editedMat = Mat()
             croppedMat.copyTo(editedMat)
         }
         previewMat(editedMat)
-        findViewById<View?>(R.id.pb_edit).visibility = View.GONE
+        binding.pbEdit.visibility = View.GONE
     }
 
     private fun filterImageButton(resourceId: Int, processImage: ProcessImage) {
-        executorService.submit {
-            var mat = Mat()
-            val height: Double = croppedMat.height().toDouble()
-            val width: Double = croppedMat.width().toDouble()
-            Imgproc.resize(croppedMat, mat, Size(width, height))
-            mat = processImage.process(mat)
-            val bmp = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888)
-            org.opencv.android.Utils.matToBitmap(mat, bmp)
-            runOnUiThread { (findViewById<View?>(resourceId) as ImageView).setImageBitmap(bmp) }
+        lifecycleScope.launch(Dispatchers.Default) {
+            Mat().let { result ->
+                val height = croppedMat.height().toDouble()
+                val width = croppedMat.width().toDouble()
+                Imgproc.resize(croppedMat, result, Size(width, height))
+                processImage.process(result).let { processed ->
+                    val bmp = Bitmap.createBitmap(
+                        processed.width(),
+                        processed.height(),
+                        Bitmap.Config.ARGB_8888
+                    )
+                    matToBitmap(processed, bmp)
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        (findViewById<View?>(resourceId) as ImageView).setImageBitmap(bmp)
+                    }
+                }
+            }
         }
     }
 
     private fun filterImage(processImage: ProcessImage) {
-        findViewById<View?>(R.id.pb_edit).visibility = View.VISIBLE
+        binding.pbEdit.visibility = View.VISIBLE
         lifecycleScope.launch(Dispatchers.Default) {
             editedMat = processImage.process(croppedMat)
             previewMat(editedMat)
-            runOnUiThread { findViewById<View?>(R.id.pb_edit).visibility = View.GONE }
+            lifecycleScope.launch(Dispatchers.Main) {
+                binding.pbEdit.visibility = View.GONE
+            }
         }
     }
 
@@ -125,18 +134,21 @@ class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeList
     }
 
     private fun setActive(activeId: Int) {
-        findViewById<View?>(currentActiveId).alpha = 0.6f
-        findViewById<View?>(currentActiveId).setPadding(12, 12, 12, 12)
+        findViewById<View>(currentActiveId).let {
+            it.alpha = 0.6f
+            it.setPadding(12, 12, 12, 12)
+        }
+        findViewById<View>(activeId).let {
+            it.alpha = 1f
+            it.setPadding(0, 0, 0, 0)
+        }
         currentActiveId = activeId
-        findViewById<View?>(currentActiveId).alpha = 1f
-        findViewById<View?>(currentActiveId).setPadding(0, 0, 0, 0)
     }
-
-    lateinit var viewModel: EditActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_edit)
+        binding = ActivityEditBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         setActive(R.id.iv_auto)
         val frameId = intent.getLongExtra(getString(R.string.intent_frame_id), -1)
         if (frameId == -1L) {
@@ -145,23 +157,7 @@ class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeList
             return
         }
 
-
-        mainImageView = findViewById(R.id.iv_edit)
-        modifyToolsLayout = findViewById(R.id.ll_modify_tools)
-        tvBrightness = findViewById(R.id.tv_brightness)
-        tvContrast = findViewById(R.id.tv_contrast)
-        val bottomNavigationView = findViewById<BottomNavigationView?>(R.id.bottom_navigation_view)
-        modifyToolsLayout.visibility = View.GONE
-
-        (application as MyApplication).database?.let { db ->
-            viewModel = ViewModelProvider(
-                this,
-                EditActivityViewModelFactory(application as MyApplication, db.frameDao())
-            ).get(
-                EditActivityViewModel::class.java
-            )
-            viewModel.getFrame(frameId)
-        }
+        initialiseViewModel(frameId)
 
         viewModel.frame?.observe(this) { frame ->
             this.frame = frame
@@ -169,49 +165,55 @@ class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeList
             setupFilterButtons()
             setupBrightnessAndContrast()
         }
-        bottomNavigationView.setOnItemSelectedListener(this)
-        findViewById<View?>(R.id.iv_black_and_white).setOnClickListener(this)
-        findViewById<View?>(R.id.iv_auto).setOnClickListener(this)
-        findViewById<View?>(R.id.iv_grayscale).setOnClickListener(this)
-        findViewById<View?>(R.id.iv_magic).setOnClickListener(this)
-        findViewById<View?>(R.id.iv_original_image).setOnClickListener(this)
+
+        binding.let {
+            it.bottomNavigationView.setOnItemSelectedListener(this)
+            it.ivBlackAndWhite.setOnClickListener(this)
+            it.ivAuto.setOnClickListener(this)
+            it.ivGrayscale.setOnClickListener(this)
+            it.ivMagic.setOnClickListener(this)
+            it.ivOriginalImage.setOnClickListener(this)
+        }
+    }
+
+    private fun initialiseViewModel(frameId: Long) {
+        (application as WonderScanApp).database?.let { db ->
+            viewModel = ViewModelProvider(
+                this,
+                EditActivityViewModelFactory(application as WonderScanApp, db.frameDao())
+            ).get(
+                EditActivityViewModel::class.java
+            )
+            viewModel.getFrame(frameId)
+        }
     }
 
     private fun setupBrightnessAndContrast() {
         brightnessAndContrastController = BrightnessAndContrastController(0.0, 1.0)
-        val sbContrast = findViewById<SeekBar?>(R.id.sb_contrast)
-        val sbBrightness = findViewById<SeekBar?>(R.id.sb_brightness)
-        sbBrightness.max = 200
-        sbBrightness.progress = 100
-        sbBrightness.setOnSeekBarChangeListener(this)
-        sbContrast.max = 200
-        sbContrast.progress = 100
-        sbContrast.setOnSeekBarChangeListener(this)
+        binding.sbBrightness.let {
+            it.max = 200
+            it.progress = 100
+            it.setOnSeekBarChangeListener(this)
+        }
+        binding.sbContrast.let {
+            it.max = 200
+            it.progress = 100
+            it.setOnSeekBarChangeListener(this)
+        }
     }
 
     private fun previewMat(mat: Mat) {
         val bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888)
-        org.opencv.android.Utils.matToBitmap(mat, bitmap)
-        runOnUiThread { mainImageView.setImageBitmap(bitmap) }
+        matToBitmap(mat, bitmap)
+        lifecycleScope.launch(Dispatchers.Main) {
+            binding.ivEdit.setImageBitmap(bitmap)
+        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_save -> {
-                findViewById<View?>(R.id.pb_edit).visibility = View.VISIBLE
-                executorService.submit {
-                    Utils.saveMat(editedMat, frame.editedUri)
-                    Utils.saveMat(croppedMat, frame.croppedUri)
-                    val resultIntent = Intent()
-                    resultIntent.putExtra(
-                        getString(R.string.intent_frame_position),
-                        intent.getIntExtra(getString(R.string.intent_frame_position), 0)
-                    )
-                    setResult(RESULT_OK, resultIntent)
-                    editedMat.release()
-                    croppedMat.release()
-                    runOnUiThread { finish() }
-                }
+                saveImage()
             }
             R.id.menu_rotate_left -> {
                 rotateLeft()
@@ -222,10 +224,36 @@ class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeList
             }
             R.id.menu_modify -> {
                 modifyToolsIsVisible = !modifyToolsIsVisible
-                modifyToolsLayout.visibility = if (modifyToolsIsVisible) View.VISIBLE else View.GONE
+                binding.llModifyTools.visibility =
+                    if (modifyToolsIsVisible) View.VISIBLE else View.GONE
             }
         }
         return false
+    }
+
+    private fun saveImage() {
+        binding.pbEdit.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.IO) {
+            brightnessAndContrastController.mat?.let {
+                editedMat = it
+            }
+            Utils.let {
+                it.saveMat(editedMat, frame.editedUri)
+                it.saveMat(croppedMat, frame.croppedUri)
+            }
+            Intent().let {
+                it.putExtra(
+                    getString(R.string.intent_frame_position),
+                    intent.getIntExtra(getString(R.string.intent_frame_position), 0)
+                )
+                setResult(RESULT_OK, it)
+            }
+            editedMat.release()
+            croppedMat.release()
+            lifecycleScope.launch(Dispatchers.Main) {
+                finish()
+            }
+        }
     }
 
     private fun rotateLeft() {
@@ -273,31 +301,29 @@ class EditActivity : BaseActivity(),   View.OnClickListener, OnSeekBarChangeList
     }
 
     override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-        val mat: Mat = when (seekBar.id) {
+        when (seekBar.id) {
             R.id.sb_contrast -> {
-                tvContrast.text = String.format(
+                binding.tvContrast.text = String.format(
                     Locale.getDefault(),
                     "Contrast • %d%%",
                     i - 100
                 )
-                brightnessAndContrastController.setContrast(editedMat.clone(), i / 100.0)
+                brightnessAndContrastController.setContrast(editedMat, i / 100.0)
             }
             R.id.sb_brightness -> {
-                tvBrightness.text = String.format(
+                binding.tvBrightness.text = String.format(
                     Locale.getDefault(),
                     "Brightness • %d%%",
                     i - 100
                 )
-                brightnessAndContrastController.setBrightness(
-                    editedMat.clone(),
-                    (i - 100).toDouble()
-                )
+                brightnessAndContrastController.setBrightness(editedMat, (i - 100).toDouble())
             }
             else -> {
-                Mat()
+                editedMat
             }
+        }.let {
+            previewMat(it)
         }
-        previewMat(mat)
     }
 
     override fun onStartTrackingTouch(seekBar: SeekBar?) {}
