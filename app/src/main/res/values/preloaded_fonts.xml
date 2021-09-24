@@ -19,7 +19,6 @@
 
 <resources>
     <array name="preloaded_fonts" translatable="false">
-        <item>@font/merriweather_bold</item>
         <item>@font/source_sans_pro_bold</item>
     </array>
 </resources>
