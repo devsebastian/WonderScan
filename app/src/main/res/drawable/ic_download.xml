@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2021 Dev Sebastian
   ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
   ~
@@ -17,25 +16,10 @@
   ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/menu_export_pdf"
-        android:icon="@drawable/ic_download"
-        android:orderInCategory="0"
-        app:iconTint="@color/colorTextPrimary"
-        android:title="Export PDF"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/menu_delete"
-        android:orderInCategory="10"
-        android:title="Delete Collection"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/menu_rename"
-        android:orderInCategory="20"
-        android:title="Rename Collection"
-        app:showAsAction="never" />
-</menu>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="24dp"
+    android:width="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="@color/colorTextSecondary" android:pathData="M2 12H4V17H20V12H22V17C22 18.11 21.11 19 20 19H4C2.9 19 2 18.11 2 17V12M12 15L17.55 9.54L16.13 8.13L13 11.25V2H11V11.25L7.88 8.13L6.46 9.55L12 15Z" />
+</vector>
