@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2021 Dev Sebastian
   ~ This file is part of WonderScan <https://github.com/devsebastian/WonderScan>.
   ~
@@ -23,7 +22,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -68,7 +67,7 @@
                 android:layout_marginEnd="12dp"
                 android:paddingHorizontal="24dp"
                 android:paddingVertical="12dp"
-                android:text="Retake"
+                android:text="@string/retake"
                 android:textColor="@android:color/secondary_text_dark"
                 android:textStyle="bold" />
 
@@ -81,7 +80,7 @@
                 android:background="@drawable/rounded_button_enabled"
                 android:paddingHorizontal="24dp"
                 android:paddingVertical="12dp"
-                android:text="Confirm"
+                android:text="@string/confirm"
                 android:textColor="@android:color/white"
                 android:textStyle="bold" />
 
@@ -91,11 +90,11 @@
     </LinearLayout>
 
     <FrameLayout
-        android:id="@+id/spinkit_frame"
+        android:id="@+id/progress_frame"
         android:layout_width="match_parent"
-        android:visibility="gone"
         android:layout_height="match_parent"
-        android:background="@color/colorPrimary">
+        android:background="@color/colorPrimary"
+        android:visibility="gone">
 
         <com.github.ybq.android.spinkit.SpinKitView
             android:layout_width="wrap_content"

@@ -18,23 +18,23 @@
   -->
 
 <resources>
-    <color name="colorPrimary">#FFFFFF</color>
-    <color name="colorPrimaryDark">#EBECF2</color>
+    <color name="colorPrimary">#1C1E26</color>
+    <color name="colorPrimaryDark">#242832</color>
     <color name="colorAccent">#0086F0</color>
 
-    <color name="colorToolbarBackground">#EBECF2</color>
-    <color name="colorToolbarTitle">#15161C</color>
-    <color name="colorToolbarBorder">#D4D4D4</color>
+    <color name="colorToolbarBackground">#242832</color>
+    <color name="colorToolbarTitle">#FFFFFF</color>
+    <color name="colorToolbarBorder">#2E323D</color>
 
-    <color name="colorWindowBackground">#E1E1E1</color>
+    <color name="colorWindowBackground">#1C1E26</color>
 
-    <color name="bottomNavigationText">#000000</color>
-    <color name="bottomNavigationIcon">#828282</color>
-    <color name="bottomNavigationBackground">#FCFCFD</color>
+    <color name="bottomNavigationText">#818698</color>
+    <color name="bottomNavigationIcon">#FFFFFF</color>
+    <color name="bottomNavigationBackground">#242832</color>
 
-    <color name="colorTextPrimary">#000000</color>
-    <color name="colorTextSecondary">#7D7D7D</color>
-    <color name="colorDivider">#1A000000</color>
+    <color name="colorTextPrimary">#FFFFFF</color>
+    <color name="colorTextSecondary">#818698</color>
+    <color name="colorDivider">#363847</color>
 
-    <color name="colorRow">#FFFFFF</color>
+    <color name="colorRow">#121319</color>
 </resources>
