@@ -6,10 +6,12 @@ various other parameters like the brightness and contrast can also be controlled
 You can download the app from: https://play.google.com/store/apps/details?id=com.devsebastian.wonderscan
 
 <p float="left">
-<img width="24%" src="https://user-images.githubusercontent.com/19506171/134734966-43aff8a5-5d6b-4880-a39d-276c2be34e7a.png"/>
-<img width="24%" src="https://user-images.githubusercontent.com/19506171/134734973-bcbcf9cd-6e92-4b94-9e95-53de50c07a24.jpg"/>
-<img width="24%" src="https://user-images.githubusercontent.com/19506171/134734983-dd722396-8bbe-4868-bf40-3649e223ac12.jpg"/>
-<img width="24%" src="https://user-images.githubusercontent.com/19506171/134734979-bb001a70-4492-4a05-95db-088cc3b5837a.jpg"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/-RfQx1yEJbR1bPaXqdt1v7ad_8mmlWHF0aRM7i0IsMEe4c480n4VMyrdHM7sL9msOO05=w720-h310-rw"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/lWEzOTpEj4IngZ-CZP3USUPmSrYKIILb9DgYKZIQBni8qbz1Bi1AyIbh4_G5WHoqlWU=w720-h310-rw"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/p3Yyl02Rq68YlzgW-eWzKEgepOIyk60ho9RCjZr-gfH9AokRzTJ_P7AgcPmBagIcW0nL=w720-h310-rw"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/ecrLgCAbafcRD1CwvDc_GZMgnaEKxhJTlYcmz0s4FzOOO4qCjMs4tghmMNBCsSaoEdeT=w720-h310-rw"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/GppLzH6eYZ4i6bMJzbbZh-S2gnpFqU64Dr1rvAgkyF_duX6f07fF5iRjQqp5_TDSqA=w720-h310-rw"/>
+<img width="16%" src="https://play-lh.googleusercontent.com/_zYDDmcuD-JB3c-D1Bl71vhbEt9-vZa1SLuHc9w1SlrSoWaqEUuD0HxpX0uTY4jD6Qk=w720-h310-rw"/>
 </p>
 
 ## Features of WonderScan:
