@@ -18,6 +18,9 @@
 package com.devsebastian.wonderscan.data
 
 import org.opencv.core.Point
+import java.lang.Double.max
+import java.lang.Double.min
+import kotlin.math.abs
 
 class BoundingRect {
     var topLeft: Point
@@ -92,5 +95,17 @@ class BoundingRect {
         val halfY = topRight.y - right.y
         topRight = Point(halfX + point.x, halfY + point.y)
         bottomRight = Point(point.x - halfX, point.y - halfY)
+    }
+
+    fun width(): Double {
+        return abs(max(topRight.x, bottomRight.x) - min(topLeft.x, bottomLeft.x))
+    }
+
+    fun height(): Double {
+        return abs(max(bottomLeft.y, bottomRight.y) - min(topLeft.y, topRight.x))
+    }
+
+    override fun toString(): String {
+        return "(topLeft=$topLeft, topRight=$topRight, bottomLeft=$bottomLeft, bottomRight=$bottomRight)"
     }
 }

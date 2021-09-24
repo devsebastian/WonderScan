@@ -24,6 +24,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.SeekBar
+import android.widget.SeekBar.GONE
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
@@ -197,6 +198,14 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
             it.progress = 100
             it.setOnSeekBarChangeListener(this)
         }
+        binding.llModifyTools.visibility = GONE
+    }
+
+    private fun resetBrightnessAndContrast() {
+        brightnessAndContrastController.brightness = 0.0
+        brightnessAndContrastController.contrast = 0.0
+        binding.sbBrightness.progress = 100
+        binding.sbContrast.progress = 100
     }
 
     private fun previewMat(mat: Mat) {
@@ -261,6 +270,7 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
 
     override fun onClick(view: View) {
         setActive(view.id)
+        resetBrightnessAndContrast()
         when (view.id) {
             R.id.iv_black_and_white -> {
                 filterImage(object : ProcessImage {

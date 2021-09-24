@@ -50,7 +50,7 @@ class MainActivity : BaseActivity() {
     private var mainFragment = MainFragment()
     private var galleryFragment = GalleryFragment()
     private var settingsFragment = SettingsFragment()
-    private lateinit var bottomNavigationView: BottomNavigationView
+    private lateinit var binding: ActivityMainBinding
 
     public override fun onResume() {
         super.onResume()
@@ -76,7 +76,7 @@ class MainActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(findViewById(R.id.toolbar))
         title = ""
@@ -121,9 +121,9 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onBackPressed() {
-        val selectedItemId = bottomNavigationView.selectedItemId
+        val selectedItemId = binding.bottomNavigationView.selectedItemId
         if (R.id.menu_home != selectedItemId) {
-            bottomNavigationView.selectedItemId = R.id.menu_home
+            binding.bottomNavigationView.selectedItemId = R.id.menu_home
         } else {
             super.onBackPressed()
         }

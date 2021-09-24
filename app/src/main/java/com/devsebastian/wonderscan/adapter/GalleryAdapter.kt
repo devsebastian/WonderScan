@@ -29,7 +29,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.devsebastian.wonderscan.R
 
-class GalleryAdapter(var context: Context?, private var data: MutableList<String>) :
+class GalleryAdapter(var context: Context?, private var data: List<String>) :
     RecyclerView.Adapter<GalleryAdapter.ViewHolder?>() {
     private val positions: MutableList<Int> = ArrayList()
 

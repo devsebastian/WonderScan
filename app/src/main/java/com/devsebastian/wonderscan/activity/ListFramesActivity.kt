@@ -22,6 +22,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.*
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -162,32 +163,9 @@ class ListFramesActivity : BaseActivity() {
             finish()
         }
 
-        docId?.let { framesAdapter = ProgressFramesAdapter(this, it, ArrayList()) }
-
         initialiseViewModel()
 
-        viewModel.let {
-            it.document.observe(this) { doc ->
-                doc?.name?.let {
-                    title
-                    (findViewById<View?>(R.id.toolbar_title) as TextView).text = title
-                }
-            }
-
-            it.frames.observe(this) { newFrames ->
-                framesAdapter.apply {
-                    if (frames.size == frames.size) {
-                        frames = newFrames
-                        for (i in frames.indices) {
-                            notifyItemChanged(i)
-                        }
-                    } else {
-                        frames = newFrames
-                        notifyDataSetChanged()
-                    }
-                }
-            }
-        }
+        docId?.let { framesAdapter = ProgressFramesAdapter(this, it, ArrayList()) }
 
         val itemTouchHelper = ItemTouchHelper(getItemTouchHelperCallback())
         itemTouchHelper.attachToRecyclerView(binding.rvFrames.apply {
@@ -206,6 +184,29 @@ class ListFramesActivity : BaseActivity() {
                 false
             }
         })
+
+        viewModel.let {
+            it.document.observe(this) { doc ->
+                doc?.name?.let {
+                    title
+                    (findViewById<View?>(R.id.toolbar_title) as TextView).text = title
+                }
+            }
+
+            it.frames.observe(this) { newFrames ->
+                framesAdapter.apply {
+                    if (frames.size == newFrames.size) {
+                        frames = newFrames
+                        for (i in frames.indices) {
+                            notifyItemChanged(i)
+                        }
+                    } else {
+                        frames = newFrames
+                        notifyDataSetChanged()
+                    }
+                }
+            }
+        }
 
         binding.fab.setOnClickListener {
             startActivity(Intent(this@ListFramesActivity, ScanActivity::class.java).apply {

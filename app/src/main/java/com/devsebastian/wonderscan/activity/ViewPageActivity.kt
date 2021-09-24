@@ -17,6 +17,7 @@
  */
 package com.devsebastian.wonderscan.activity
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.DialogInterface
@@ -28,16 +29,16 @@ import android.view.MenuItem
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager.widget.ViewPager
-import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.adapter.ViewFrameAdapter
 import com.devsebastian.wonderscan.data.Frame
 import com.devsebastian.wonderscan.databinding.ActivityViewFramesBinding
-import com.devsebastian.wonderscan.databinding.DialogNoteBinding
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ViewPageActivityViewModelFactory
 import com.google.android.material.navigation.NavigationBarView
@@ -234,26 +235,26 @@ class ViewPageActivity : BaseActivity(), NavigationBarView.OnItemSelectedListene
         }
     }
 
+    @SuppressLint("InflateParams")
     private fun showNoteDialog(name: String?, hint: String?, note: String?, frame: Frame) {
-        DialogNoteBinding.inflate(layoutInflater).let { v ->
-            AlertDialog.Builder(this@ViewPageActivity).let { builder ->
-                v.title.text = name
-                v.etNote.hint = hint
-                v.etNote.setText(note)
-                layoutInflater.inflate(R.layout.dialog_note, null).let { view ->
-                    builder.setView(view)
-                    builder.create().let { dialog ->
-                        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-                        dialog.show()
-                        v.tvSave.setOnClickListener {
-                            frame.note = v.etNote.text.toString()
-                            viewModel.updateFrame(frame)
-                            dialog.dismiss()
-                        }
-                        v.tvCancel.setOnClickListener { dialog.dismiss() }
-                    }
+        layoutInflater.inflate(R.layout.dialog_note, null).apply {
+            val alertDialog = AlertDialog.Builder(this@ViewPageActivity)
+                .setView(this)
+                .create().apply {
+                    window?.setBackgroundDrawableResource(android.R.color.transparent)
+                    show()
                 }
+            val etNote = findViewById<EditText>(R.id.et_note).apply {
+                this.hint = hint
+                setText(note)
             }
+            findViewById<TextView>(R.id.title).text = name
+            findViewById<TextView>(R.id.tv_save).setOnClickListener {
+                frame.note = etNote.text.toString()
+                viewModel.updateFrame(frame)
+                alertDialog.dismiss()
+            }
+            findViewById<TextView>(R.id.tv_cancel).setOnClickListener { alertDialog.dismiss() }
         }
     }
 

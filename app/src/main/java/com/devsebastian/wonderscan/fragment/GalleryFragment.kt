@@ -71,29 +71,27 @@ open class GalleryFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val v = inflater.inflate(R.layout.fragment_gallery, container, false)
-        adapter = GalleryAdapter(activity, ArrayList())
+        adapter = GalleryAdapter(activity, emptyList())
         v.findViewById<RecyclerView>(R.id.recycler_view).let {
             it.setHasFixedSize(true)
             it.layoutManager = GridLayoutManager(activity, 5)
             it.adapter = adapter
         }
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             val uris = getAllImages()
             adapter.setImagePaths(uris)
             lifecycleScope.launch(Dispatchers.Main) { adapter.notifyDataSetChanged() }
         }
-        v.findViewById<View?>(R.id.fab).apply {
-            setOnClickListener {
-                v.findViewById<View?>(R.id.gallery_progress).visibility = View.VISIBLE
-                lifecycleScope.launch(Dispatchers.IO) {
-                    adapter.getSelectedUris().let { uris ->
-                        Intent(activity, CropAndListFramesActivity::class.java).let {
-                            it.putExtra(getString(R.string.intent_uris), uris)
-                            adapter.clearSelection()
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                startActivity(it)
-                                v.findViewById<View?>(R.id.gallery_progress).visibility = View.GONE
-                            }
+        v.findViewById<View?>(R.id.fab).setOnClickListener {
+            v.findViewById<View?>(R.id.gallery_progress).visibility = View.VISIBLE
+            lifecycleScope.launch(Dispatchers.IO) {
+                adapter.getSelectedUris().let { uris ->
+                    Intent(activity, CropAndListFramesActivity::class.java).let {
+                        it.putExtra(getString(R.string.intent_uris), uris)
+                        adapter.clearSelection()
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            startActivity(it)
+                            v.findViewById<View?>(R.id.gallery_progress).visibility = View.GONE
                         }
                     }
                 }

@@ -21,6 +21,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View.VISIBLE
 import android.widget.LinearLayout
 import androidx.lifecycle.lifecycleScope
@@ -59,11 +60,16 @@ class CropActivity : BaseActivity() {
         val angle = intent.getIntExtra(getString(R.string.intent_angle), 0)
         val framePos = intent.getIntExtra(getString(R.string.intent_frame_position), 0)
         val bitmap = BitmapFactory.decodeFile(uri)
-        val width = Utils.getDeviceWidth()
-        val height = (bitmap.height * (width / bitmap.width.toFloat())).toInt()
+        var width = Utils.getDeviceWidth()
+        var height = (bitmap.height * (width / bitmap.width.toFloat())).toInt()
+        if (height > width) {
+            val ratio: Double = (width.toDouble() / height) * 1.5
+            height = (ratio * height).toInt()
+            width = (ratio * width).toInt()
+        }
         val viewHeight = bitmap.height * (width / bitmap.width.toFloat())
-        val scaleFactor = width / viewHeight * 0.9f
-        val params = LinearLayout.LayoutParams(width, height)
+        val scaleFactor = height / viewHeight * 0.9f
+        val params = LinearLayout.LayoutParams(width, height).apply { gravity = Gravity.CENTER }
         val ratio = width / bitmap.width.toDouble()
 
         binding.cvCrop.apply {
@@ -75,7 +81,6 @@ class CropActivity : BaseActivity() {
                 .setDuration(500)
                 .start()
         }
-
 
         lifecycleScope.launch(Dispatchers.Default) {
             binding.cvCrop.setBoundingRect(
@@ -164,8 +169,12 @@ class CropActivity : BaseActivity() {
             val mat = Mat()
             bitmapToMat(bitmap, mat)
             return mat.clone().apply {
-                val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
-                Imgproc.warpPerspective(mat, this, perspectiveTransform, Size(width, height))
+                Imgproc.warpPerspective(
+                    mat,
+                    this,
+                    Imgproc.getPerspectiveTransform(srcMat, dstMat),
+                    Size(width, height)
+                )
             }
         }
 
