@@ -54,6 +54,7 @@
     <string name="search_any_document">Search any document</string>
     <string name="retake">Retake</string>
     <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
 
     <string-array name="themes">
         <item>@string/dark_theme</item>

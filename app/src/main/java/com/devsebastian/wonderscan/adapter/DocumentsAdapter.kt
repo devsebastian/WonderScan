@@ -39,7 +39,7 @@ import java.util.*
 
 class DocumentsAdapter(
     private val activity: Activity,
-    private var data: MutableList<Document>,
+    private var data: List<Document>,
     val viewModel: MainViewModel
 ) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -48,8 +48,8 @@ class DocumentsAdapter(
     private var maxWidth: Int
 
     @SuppressLint("NotifyDataSetChanged")
-    fun updateDocuments(documents: MutableList<Document>) {
-        data = documents.apply { add(Document()) }
+    fun updateDocuments(documents: List<Document>) {
+        data = documents
         notifyDataSetChanged()
     }
 

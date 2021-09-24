@@ -28,8 +28,8 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.R
+import com.devsebastian.wonderscan.WonderScanApp
 import com.devsebastian.wonderscan.data.Frame
 import com.devsebastian.wonderscan.databinding.ActivityEditBinding
 import com.devsebastian.wonderscan.utils.BrightnessAndContrastController
@@ -61,12 +61,11 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
 
     private fun setupPreview() {
         croppedMat = Utils.readMat(frame.croppedUri)
-        frame.editedUri?.let {
-            editedMat = Utils.readMat(it)
-        }
-        frame.editedUri ?: run {
+        if (frame.editedUri == null) {
             editedMat = Mat()
             croppedMat.copyTo(editedMat)
+        } else {
+            editedMat = Utils.readMat(frame.editedUri)
         }
         previewMat(editedMat)
         binding.pbEdit.visibility = View.GONE
@@ -74,17 +73,17 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
 
     private fun filterImageButton(resourceId: Int, processImage: ProcessImage) {
         lifecycleScope.launch(Dispatchers.Default) {
+            val height = croppedMat.height().toDouble()
+            val width = croppedMat.width().toDouble()
             Mat().let { result ->
-                val height = croppedMat.height().toDouble()
-                val width = croppedMat.width().toDouble()
                 Imgproc.resize(croppedMat, result, Size(width, height))
-                processImage.process(result).let { processed ->
+                processImage.process(result).let {
                     val bmp = Bitmap.createBitmap(
-                        processed.width(),
-                        processed.height(),
+                        it.width(),
+                        it.height(),
                         Bitmap.Config.ARGB_8888
                     )
-                    matToBitmap(processed, bmp)
+                    matToBitmap(it, bmp)
                     lifecycleScope.launch(Dispatchers.Main) {
                         (findViewById<View?>(resourceId) as ImageView).setImageBitmap(bmp)
                     }
@@ -98,9 +97,7 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
         lifecycleScope.launch(Dispatchers.Default) {
             editedMat = processImage.process(croppedMat)
             previewMat(editedMat)
-            lifecycleScope.launch(Dispatchers.Main) {
-                binding.pbEdit.visibility = View.GONE
-            }
+            lifecycleScope.launch(Dispatchers.Main) { binding.pbEdit.visibility = View.GONE }
         }
     }
 
@@ -134,13 +131,13 @@ class EditActivity : BaseActivity(), View.OnClickListener, OnSeekBarChangeListen
     }
 
     private fun setActive(activeId: Int) {
-        findViewById<View>(currentActiveId).let {
-            it.alpha = 0.6f
-            it.setPadding(12, 12, 12, 12)
+        findViewById<View>(currentActiveId).apply {
+            alpha = 0.6f
+            setPadding(12, 12, 12, 12)
         }
-        findViewById<View>(activeId).let {
-            it.alpha = 1f
-            it.setPadding(0, 0, 0, 0)
+        findViewById<View>(activeId).apply {
+            alpha = 1f
+            setPadding(0, 0, 0, 0)
         }
         currentActiveId = activeId
     }

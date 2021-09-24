@@ -61,7 +61,7 @@ open class MainFragment : Fragment() {
 
         initialiseViewModel()
 
-        documentsAdapter = DocumentsAdapter(requireActivity(), mutableListOf(), viewModel)
+        documentsAdapter = DocumentsAdapter(requireActivity(), emptyList(), viewModel)
 
         v.findViewById<RecyclerView>(R.id.recycler_view).let {
             it.setHasFixedSize(true)

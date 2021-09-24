@@ -35,7 +35,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.devsebastian.wonderscan.*
 import com.devsebastian.wonderscan.adapter.ProgressFramesAdapter
-import com.devsebastian.wonderscan.data.Document
+import com.devsebastian.wonderscan.databinding.ActivityListFramesBinding
 import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.ListFrameActivityViewModelFactory
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +43,10 @@ import kotlinx.coroutines.launch
 
 
 class ListFramesActivity : BaseActivity() {
+
     private lateinit var framesAdapter: ProgressFramesAdapter
+    private lateinit var viewModel: ListFrameActivityViewModel
+    private var docId: String? = null
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_list_frames, menu)
@@ -83,70 +86,50 @@ class ListFramesActivity : BaseActivity() {
 
     private fun showRenameDialog() {
         lifecycleScope.launch(Dispatchers.Main) {
-            val document: Document = viewModel.getDocument()
-            AlertDialog.Builder(this@ListFramesActivity).apply {
-                setTitle("Rename")
-                val frameLayout = FrameLayout(application)
-                val editText = EditText(application)
-                val layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                layoutParams.setMargins(50, 12, 50, 12)
-                editText.layoutParams = layoutParams
-                editText.setText(document.name)
-                frameLayout.addView(editText)
-                setView(frameLayout)
-                setNegativeButton("Cancel", null)
-                setPositiveButton("Save") { _: DialogInterface?, _: Int ->
-                    document.name = editText.text.toString()
-                    viewModel.updateDocument(document)
+            viewModel.getDocument().let { document ->
+                val editText = EditText(application).apply {
+                    setText(document.name)
+                    layoutParams = FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(50, 12, 50, 12)
+                    }
                 }
-                create().show()
+                val frameLayout = FrameLayout(application).apply { addView(editText) }
+                AlertDialog.Builder(this@ListFramesActivity).apply {
+                    setTitle("Rename")
+                    setView(frameLayout)
+                    setNegativeButton("Cancel", null)
+                    setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                        document.name = editText.text.toString()
+                        viewModel.updateDocument(document)
+                    }
+                    create().show()
+                }
             }
         }
     }
 
     private fun showConfirmDeleteDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Confirm Delete")
-        builder.setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
-        builder.setNegativeButton("Cancel", null)
-        builder.setPositiveButton("Delete") { _, _ ->
-            viewModel.delete()
-            finish()
+        AlertDialog.Builder(this).apply {
+            setTitle("Confirm Delete")
+            setMessage("Are you sure you want to delete this document. You won't be able to recover the document later!")
+            setNegativeButton("Cancel", null)
+            setPositiveButton("Delete") { _, _ ->
+                viewModel.delete()
+                finish()
+            }
+            create().show()
         }
-        builder.create().show()
     }
-
-    lateinit var viewModel: ListFrameActivityViewModel
-    var docId: String? = null
 
     override fun onResume() {
         super.onResume()
         viewModel.processUnprocessedFrames(docId!!)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        title = ""
-        setContentView(R.layout.activity_list_frames)
-        setSupportActionBar(findViewById(R.id.toolbar))
-        if (supportActionBar != null) {
-            supportActionBar?.setDisplayHomeAsUpEnabled(true)
-            supportActionBar?.setHomeButtonEnabled(true)
-        }
-        docId = intent.getStringExtra(getString(R.string.intent_document_id))
-        if (docId == null) {
-            Toast.makeText(this, getString(R.string.toast_error_message), Toast.LENGTH_SHORT)
-                .show()
-            finish()
-            return
-        }
-
-        framesAdapter = ProgressFramesAdapter(this, docId!!, ArrayList())
-
+    private fun initialiseViewModel() {
         (application as WonderScanApp).database?.let { db ->
             viewModel = ViewModelProvider(
                 this,
@@ -158,56 +141,78 @@ class ListFramesActivity : BaseActivity() {
                 )
             ).get(ListFrameActivityViewModel::class.java)
         }
+    }
 
-        viewModel.document.observe(this) { doc ->
-            doc?.name?.let {
-                (findViewById<View?>(R.id.toolbar_title) as TextView).text = it
-            }
+    @SuppressLint("ClickableViewAccessibility", "NotifyDataSetChanged")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val binding = ActivityListFramesBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        title = ""
+        setSupportActionBar(findViewById(R.id.toolbar))
+
+        if (supportActionBar != null) {
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+            supportActionBar?.setHomeButtonEnabled(true)
         }
-
-        viewModel.frames.observe(this) { frames ->
-            var datasetChanged = true
-            if (framesAdapter.frames.size == frames.size) datasetChanged = false
-            framesAdapter.frames = frames
-            if (datasetChanged)
-                framesAdapter.notifyDataSetChanged()
-            else
-                for (i in frames.indices) {
-                    framesAdapter.notifyItemChanged(i)
-                }
-        }
-
-        val itemTouchHelper = ItemTouchHelper(getItemTouchHelperCallback())
-        val fab = findViewById<View?>(R.id.fab)
-        val recyclerView = findViewById<RecyclerView?>(R.id.rv_frames)
-        recyclerView.layoutManager = GridLayoutManager(this, 2)
-        recyclerView.setHasFixedSize(true)
-        recyclerView.adapter = framesAdapter
-        fab.setOnClickListener {
-            val i = Intent(this@ListFramesActivity, ScanActivity::class.java)
-            i.putExtra(getString(R.string.intent_document_id), docId)
-            startActivity(i)
+        docId = intent.getStringExtra(getString(R.string.intent_document_id))
+        docId ?: run {
+            Toast.makeText(this, getString(R.string.toast_error_message), Toast.LENGTH_SHORT)
+                .show()
             finish()
         }
-        itemTouchHelper.attachToRecyclerView(recyclerView)
 
-        recyclerView.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_UP -> {
-                    if (framesAdapter.isSwapped) {
-                        framesAdapter.isSwapped = false
-                        viewModel.update(framesAdapter.frames)
+        docId?.let { framesAdapter = ProgressFramesAdapter(this, it, ArrayList()) }
+
+        initialiseViewModel()
+
+        viewModel.let {
+            it.document.observe(this) { doc ->
+                doc?.name?.let {
+                    title
+                    (findViewById<View?>(R.id.toolbar_title) as TextView).text = title
+                }
+            }
+
+            it.frames.observe(this) { newFrames ->
+                framesAdapter.apply {
+                    if (frames.size == frames.size) {
+                        frames = newFrames
+                        for (i in frames.indices) {
+                            notifyItemChanged(i)
+                        }
+                    } else {
+                        frames = newFrames
+                        notifyDataSetChanged()
                     }
                 }
             }
-            false
         }
 
-        Toast.makeText(
-            this,
-            "Hint: Re-order pages by long pressing a page and dragging it to the appropriate position",
-            Toast.LENGTH_SHORT
-        ).show()
+        val itemTouchHelper = ItemTouchHelper(getItemTouchHelperCallback())
+        itemTouchHelper.attachToRecyclerView(binding.rvFrames.apply {
+            layoutManager = GridLayoutManager(this@ListFramesActivity, 2)
+            adapter = framesAdapter
+            setHasFixedSize(true)
+            setOnTouchListener { _, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_UP -> {
+                        if (framesAdapter.isSwapped) {
+                            framesAdapter.isSwapped = false
+                            viewModel.update(framesAdapter.frames)
+                        }
+                    }
+                }
+                false
+            }
+        })
+
+        binding.fab.setOnClickListener {
+            startActivity(Intent(this@ListFramesActivity, ScanActivity::class.java).apply {
+                putExtra(getString(R.string.intent_document_id), docId)
+                finish()
+            })
+        }
     }
 
     private fun getItemTouchHelperCallback(): ItemTouchHelper.Callback {

@@ -21,6 +21,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
+import android.util.Log
 import android.util.Pair
 import androidx.activity.result.ActivityResultLauncher
 import com.devsebastian.wonderscan.R
@@ -67,14 +68,8 @@ object Utils {
     }
 
     fun saveMat(mat: Mat?, path: String?) {
-        when (mat?.channels()) {
-            2 -> {
-                Imgproc.cvtColor(mat, mat, Imgproc.COLOR_GRAY2RGB)
-            }
-            3 -> {
-                Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB)
-            }
-        }
+        if (mat?.channels() != 1)
+            Imgproc.cvtColor(mat, mat, Imgproc.COLOR_BGR2RGB)
         Imgcodecs.imwrite(path, mat)
     }
 

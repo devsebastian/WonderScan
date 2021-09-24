@@ -35,9 +35,6 @@ import com.devsebastian.wonderscan.viewmodel.CropAndListFramesActivityViewModel
 import com.devsebastian.wonderscan.viewmodel.CropAndListFramesActivityViewModelFactory
 
 class CropAndListFramesActivity : BaseActivity() {
-    private var sourcePaths: MutableList<String> = ArrayList()
-
-    private lateinit var framesAdapter: ProgressFramesAdapter
     private lateinit var viewModel: CropAndListFramesActivityViewModel
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -88,17 +85,17 @@ class CropAndListFramesActivity : BaseActivity() {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.setHomeButtonEnabled(true)
         }
-        sourcePaths = intent.getStringArrayListExtra(getString(R.string.intent_uris)) ?: ArrayList()
+        val sourcePaths = intent.getStringArrayListExtra(getString(R.string.intent_uris)) ?: ArrayList()
         binding.fab.visibility = View.GONE
+        initialiseViewModel()
 
-        framesAdapter = ProgressFramesAdapter(this, viewModel.document.id, ArrayList())
+        val framesAdapter = ProgressFramesAdapter(this, viewModel.document.id, ArrayList())
         binding.rvFrames.let {
             it.layoutManager = GridLayoutManager(this, 2)
             it.setHasFixedSize(true)
             it.adapter = framesAdapter
         }
 
-        initialiseViewModel()
         viewModel.let {
             it.setup(sourcePaths)
             it.frames.observe(this) { frames ->

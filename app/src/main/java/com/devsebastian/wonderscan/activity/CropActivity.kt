@@ -43,18 +43,18 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 class CropActivity : BaseActivity() {
-    private var ratio = 0.0
-    private var croppedUri: String? = null
-    private var editedUri: String? = null
-    private lateinit var binding: ActivityCropBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCropBinding.inflate(layoutInflater)
+        val binding = ActivityCropBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        croppedUri = intent.getStringExtra(getString(R.string.intent_cropped_path))
-        editedUri = intent.getStringExtra(getString(R.string.intent_edited_path))
+        var croppedUri = intent.getStringExtra(getString(R.string.intent_cropped_path))
+        val editedUri = intent.getStringExtra(getString(R.string.intent_edited_path))
+        if (editedUri != null) {
+            binding.tvRetake.text = getString(R.string.cancel)
+        }
+
         val uri = intent.getStringExtra(getString(R.string.intent_source_path))
         val angle = intent.getIntExtra(getString(R.string.intent_angle), 0)
         val framePos = intent.getIntExtra(getString(R.string.intent_frame_position), 0)
@@ -64,34 +64,30 @@ class CropActivity : BaseActivity() {
         val viewHeight = bitmap.height * (width / bitmap.width.toFloat())
         val scaleFactor = width / viewHeight * 0.9f
         val params = LinearLayout.LayoutParams(width, height)
-        ratio = width / bitmap.width.toDouble()
+        val ratio = width / bitmap.width.toDouble()
 
-        binding.cvCrop.let {
-            it.setImageBitmap(bitmap)
-            it.animate()
-                .rotation(angle.toFloat())
+        binding.cvCrop.apply {
+            layoutParams = params
+            setImageBitmap(bitmap)
+            animate().rotation(angle.toFloat())
                 .scaleX(scaleFactor)
                 .scaleY(scaleFactor)
                 .setDuration(500)
                 .start()
-            it.layoutParams = params
         }
 
 
         lifecycleScope.launch(Dispatchers.Default) {
-            var boundingRect = DetectBox.findCorners(bitmap, 0)
-            if (boundingRect == null) {
-                val w = bitmap.width
-                val h = bitmap.height
-                val padding = w * 0.1
-                boundingRect = BoundingRect().apply {
+            binding.cvCrop.setBoundingRect(
+                DetectBox.findCorners(bitmap, 0) ?: BoundingRect().apply {
+                    val w = bitmap.width
+                    val h = bitmap.height
+                    val padding = w * 0.1
                     topLeft = Point(padding * ratio, padding * ratio)
                     topRight = Point((w - padding) * ratio, padding * ratio)
                     bottomLeft = Point(padding * ratio, (h - padding) * ratio)
                     bottomRight = Point((w - padding) * ratio, (h - padding) * ratio)
-                }
-            }
-            binding.cvCrop.setBoundingRect(boundingRect)
+                })
         }
 
         binding.tvRetake.setOnClickListener {
@@ -113,13 +109,13 @@ class CropActivity : BaseActivity() {
                     Utils.saveMat(this, croppedUri)
                 }
                 bitmap.recycle()
-                Intent().let {
-                    it.putExtra(getString(R.string.intent_source_path), uri)
-                    it.putExtra(getString(R.string.intent_cropped_path), croppedUri)
-                    it.putExtra(getString(R.string.intent_frame_position), framePos)
-                    it.putExtra(getString(R.string.intent_angle), angle)
-                    setResult(RESULT_OK, it)
-                }
+
+                setResult(RESULT_OK, Intent().apply {
+                    putExtra(getString(R.string.intent_source_path), uri)
+                    putExtra(getString(R.string.intent_cropped_path), croppedUri)
+                    putExtra(getString(R.string.intent_frame_position), framePos)
+                    putExtra(getString(R.string.intent_angle), angle)
+                })
                 finish()
             }
         }
@@ -204,14 +200,15 @@ class CropActivity : BaseActivity() {
                 width, height,
                 widthA, 0.0
             )
-            return mat.clone().apply {
-                val perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat)
-                Imgproc.warpPerspective(mat, this, perspectiveTransform, Size(width, height))
-            }
-        }
 
-        private fun sqr(u: Double): Double {
-            return u * u
+            return mat.clone().apply {
+                Imgproc.warpPerspective(
+                    mat,
+                    this,
+                    Imgproc.getPerspectiveTransform(srcMat, dstMat),
+                    Size(width, height)
+                )
+            }
         }
 
         private fun getHWRatio(
@@ -231,16 +228,18 @@ class CropActivity : BaseActivity() {
             var m3y = BL.y / ratio
             var m4x = BR.x / ratio
             var m4y = BR.y / ratio
+
             val u0 = (width / 2f).toDouble()
             val v0 = (height / 2f).toDouble()
 
             m1x -= u0
-            m1y -= v0
             m2x -= u0
-            m2y -= v0
             m3x -= u0
-            m3y -= v0
             m4x -= u0
+
+            m1y -= v0
+            m2y -= v0
+            m3y -= v0
             m4y -= v0
 
 
@@ -254,14 +253,19 @@ class CropActivity : BaseActivity() {
                         ((k3 - 1) * (k2 - 1))
 
             var hwRatio = sqrt(
-                (sqr(k2 - 1) + sqr(k2 * m2y - m1y) / fSquared + sqr(k2 * m2x - m1x) / fSquared) /
-                        (sqr(k3 - 1) + sqr(k3 * m3y - m1y) / fSquared + sqr(k3 * m3x - m1x) / fSquared)
+                ((k2 - 1).pow(2) +
+                        (k2 * m2y - m1y).pow(2) / fSquared +
+                        (k2 * m2x - m1x).pow(2) / fSquared) /
+                        ((k3 - 1).pow(2) +
+                                (k3 * m3y - m1y).pow(2) / fSquared +
+                                (k3 * m3x - m1x).pow(2) / fSquared)
             )
 
-            if (k2 == 1.0 && k3 == 1.0) hwRatio = sqrt(
-                (sqr(m2y - m1y) + sqr(m2x - m1x)) /
-                        (sqr(m3y - m1y) + sqr(m3x - m1x))
-            )
+            if (k2 == 1.0 && k3 == 1.0)
+                hwRatio = sqrt(
+                    ((m2y - m1y).pow(2) + (m2x - m1x)).pow(2) /
+                            ((m3y - m1y).pow(2) + (m3x - m1x).pow(2))
+                )
 
             return hwRatio
         }
