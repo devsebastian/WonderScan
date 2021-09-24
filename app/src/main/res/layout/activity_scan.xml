@@ -37,7 +37,7 @@
             android:layout_height="match_parent"
             android:background="@android:color/darker_gray" />
 
-        <com.devsebastian.wonderscan.view.ScanView
+        <com.wonderscan.android.view.ScanView
             android:id="@+id/scan_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

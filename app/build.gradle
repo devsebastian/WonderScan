@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.devsebastian.wonderscan"
+        applicationId "com.wonderscan.android"
         minSdkVersion 24
         targetSdkVersion 31
         versionCode 4

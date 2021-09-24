@@ -17,7 +17,7 @@
   ~ along with WonderScan.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<com.devsebastian.wonderscan.view.SquareFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.wonderscan.android.view.SquareFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginStart="1dp"
@@ -41,4 +41,4 @@
         android:textColor="@android:color/white"
         android:textSize="12sp"
         android:background="@drawable/ic_image_bubble" />
-</com.devsebastian.wonderscan.view.SquareFrameLayout>
+</com.wonderscan.android.view.SquareFrameLayout>
