@@ -37,19 +37,19 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.preferences)
 
-        findPreference<Preference?>(getString(R.string.preference_share))?.onPreferenceClickListener =
+        findPreference<Preference?>(getString(R.string.key_share))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 Utils.shareAppLink(requireContext())
                 false
             }
 
-        findPreference<Preference?>(getString(R.string.preference_feedback))?.onPreferenceClickListener =
+        findPreference<Preference?>(getString(R.string.key_feedback))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 sendFeedback()
                 false
             }
 
-        findPreference<Preference?>(getString(R.string.preference_privacy_policy))?.onPreferenceClickListener =
+        findPreference<Preference?>(getString(R.string.key_privacy_policy))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -59,7 +59,7 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
                 false
             }
 
-        findPreference<Preference?>(getString(R.string.preference_rate_us))?.onPreferenceClickListener =
+        findPreference<Preference?>(getString(R.string.key_rate_us))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
@@ -72,6 +72,13 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
         findPreference<Preference?>(getString(R.string.key_developer))?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://devsebastian.me/"))
+                startActivity(intent)
+                false
+            }
+
+        findPreference<Preference?>(getString(R.string.key_source_code_license))?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/devsebastian/WonderScan/blob/main/LICENSE.txt"))
                 startActivity(intent)
                 false
             }

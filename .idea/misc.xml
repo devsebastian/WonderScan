@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/drawable/ic_code.xml" value="0.26615384615384613" />
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/drawable/ic_doc.xml" value="0.26615384615384613" />
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/drawable/ic_download.xml" value="0.26615384615384613" />
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/drawable/ic_feedback.xml" value="0.26615384615384613" />
@@ -18,7 +19,7 @@
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/layout/row_frame.xml" value="0.25416666666666665" />
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/layout/row_image.xml" value="0.25416666666666665" />
         <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/menu/menu_list_frames.xml" value="0.264" />
-        <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/xml/preferences.xml" value="0.2" />
+        <entry key="..\:/Users/Dev/AndroidStudioProjects/WonderScan/app/src/main/res/xml/preferences.xml" value="0.264" />
       </map>
     </option>
   </component>
