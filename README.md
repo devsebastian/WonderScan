@@ -1,7 +1,5 @@
 # WonderScan
-WonderScan is a Document Scanning Mobile application developed in India. All data is stored in your device and no data is sent to any server! 
-Many different filters are available ranging from simple Black and White to Magic color. 
-various other parameters like the brightness and contrast can also be controlled quite easilly.
+WonderScan is a fully open-source, free, and secure on-device document scanner. All data is stored in your device and no data is sent to any online server around the world! Many different effects are available ranging from simple Black and White, Grayscale, to even Magic color! Various other parameters like the brightness and contrast can also be controlled. Scanned documents could then be easilly exported in PDF format!
 
 You can download the app from: https://play.google.com/store/apps/details?id=com.wonderscan.android
 
@@ -13,16 +11,16 @@ You can download the app from: https://play.google.com/store/apps/details?id=com
 </p>
 
 ## Features of WonderScan:
-1. Import Documents from Camera or Gallery
+1. Import Documents from camera or gallery
 2. Crop Images and apply perspective-wrap to give a 2D effect
-3. Apply many Filters.
-4. Save as Documents.
-5. Add any number of pages to existing Documents.
+3. Apply many different filters to each document
+4. Save as collection of frames as a document. 
+5. Add any number of pages to existing documents.
 6. Re-arrange pages of existing document.
 6. Create PDFs
 7. perform OCR and read text of scanned documents
-8. Save a not for each frame or document
-9. Control Brightness and Contrast of each document
+8. Save a note for each frame or document
+9. Control brightness and contrast of each document
 
 
 ## Contributing 
