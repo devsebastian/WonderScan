@@ -3,7 +3,7 @@ WonderScan is a Document Scanning Mobile application developed in India. All dat
 Many different filters are available ranging from simple Black and White to Magic color. 
 various other parameters like the brightness and contrast can also be controlled quite easilly.
 
-You can download the app from: https://play.google.com/store/apps/details?id=com.devsebastian.wonderscan
+You can download the app from: https://play.google.com/store/apps/details?id=com.wonderscan.android
 
 <p float="left">
 <img width="24%" src="https://user-images.githubusercontent.com/19506171/134734966-43aff8a5-5d6b-4880-a39d-276c2be34e7a.png"/>
