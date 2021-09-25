@@ -35,7 +35,7 @@
             android:layout_weight="1" />
 
 
-        <com.devsebastian.wonderscan.view.CropView
+        <com.wonderscan.android.view.CropView
             android:id="@+id/cv_crop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
