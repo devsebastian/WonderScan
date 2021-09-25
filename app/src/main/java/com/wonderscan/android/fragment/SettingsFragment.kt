@@ -53,7 +53,7 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://sites.google.com/view/bharatscanprivacypolicy/home")
+                    Uri.parse("https://sites.google.com/view/wonderscanprivacypolicy/home")
                 )
                 startActivity(intent)
                 false
@@ -63,7 +63,7 @@ open class SettingsFragment : PreferenceFragmentCompat(), OnSharedPreferenceChan
             Preference.OnPreferenceClickListener {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=com.devsebastian.wonderscan")
+                    Uri.parse("https://play.google.com/store/apps/details?id=com.wonderscan.android")
                 )
                 startActivity(intent)
                 false
