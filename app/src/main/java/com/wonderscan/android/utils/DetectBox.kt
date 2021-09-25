@@ -95,8 +95,6 @@ class DetectBox {
                     if (area.second > maxArea) {
                         val bRect = BoundingRect()
                         bRect.fromPoints(matOfPoint2f.toList(), ratio, ratio)
-                        Log.d("devdevdev", "width: " +  bRect.width().toString() + " height: " + bRect.height())
-                        if (bRect.width() > mat.width() || bRect.height() > mat.height()) continue
                         mat.release()
                         sourceMat.release()
                         return bRect
